@@ -132,8 +132,9 @@ def format_post(s):
                 block.append(f"{start} — {end} ({duration(start, end)})")
         else:
             block.append("Відключень немає ✅")
-        blocks.append("\n".join(block))
-    lines.append("\n\n".join(blocks))
+        blocks.append("\n".join(f"<code>{line}</code>" for line in block))
+    lines.append("<blockquote>" + "\n\n".join(blocks) + "</blockquote>")
+    lines.append("")
 
     lines += [
         "Надсилай рідним та друзям, щоб вони могли спланувати свій час.",
