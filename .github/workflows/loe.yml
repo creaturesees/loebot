@@ -1,0 +1,39 @@
+name: LOE schedule check
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # кожні 5 хв (GitHub може запізнюватись на кілька хвилин)
+  workflow_dispatch:         # кнопка ручного запуску у вкладці Actions
+
+permissions:
+  contents: write            # щоб комітити last_hash.txt
+
+concurrency:
+  group: loe-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests
+
+      - name: Check schedule
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          HC_URL: ${{ secrets.HC_URL }}
+        run: python loe_bot.py
+
+      - name: Save state
+        run: |
+          git config user.name "loe-bot"
+          git config user.email "loe-bot@users.noreply.github.com"
+          git add last_hash.txt 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "update schedule hash" && git push)
