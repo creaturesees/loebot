@@ -1,7 +1,7 @@
 """
 Бот графіків відключень Львівобленерго для GitHub Actions.
-Один запуск = одна перевірка. Якщо графік змінився — надсилає повідомлення
-і оновлює last_hash.txt (workflow комітить його назад у репозиторій).
+Один запуск = одна перевірка. Якщо з'явився новий/оновлений графік —
+надсилає повідомлення і оновлює last_hash.txt (workflow комітить його назад).
 
 Змінні середовища (GitHub → Settings → Secrets and variables → Actions):
   BOT_TOKEN — токен від @BotFather
@@ -9,43 +9,80 @@
   HC_URL    — (необов'язково) пінг-URL з healthchecks.io
 """
 import hashlib
+import html
 import json
 import os
+import re
 from datetime import datetime
 
 import requests
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID = os.environ["CHAT_ID"]
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+CHAT_ID = os.environ.get("CHAT_ID", "")
 HC_URL = os.environ.get("HC_URL", "")
 STATE_FILE = "last_hash.txt"
 
-# Встав сюди URL, знайдений у DevTools → Network → Fetch/XHR
-API_URL = "https://api.loe.lviv.ua/..."
+API_URL = "https://api.loe.lviv.ua/api/menus?page=1&type=photo-grafic"
+HEADERS = {"User-Agent": "Mozilla/5.0 (loe-schedule-bot)"}
 
 WEEKDAYS = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
 MONTHS = ["січня", "лютого", "березня", "квітня", "травня", "червня",
           "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
 
+RE_DATE = re.compile(r"Графік погодинних відключень на (\d{2}\.\d{2}\.\d{4})")
+RE_UPDATED = re.compile(r"Інформація станом на (\d{2}:\d{2} \d{2}\.\d{2}\.\d{4})")
+RE_GROUP = re.compile(r"Група (\d\.\d)\.\s*(.+)")
+RE_INTERVAL = re.compile(r"з (\d{2}:\d{2}) до (\d{2}:\d{2})")
 
-def fetch_schedule():
-    """
-    TODO: адаптуй під реальну відповідь API.
-    Має повернути:
-    {
-        "date": "17.10.2026",
-        "updated": "10:59 17.10.2026",
-        "groups": {
-            "1.1": [("20:00", "22:30")],
-            "4.2": [("10:00", "12:00"), ("21:00", "22:30")],
-        }
+
+def html_to_lines(raw):
+    text = re.sub(r"<[^>]+>", "\n", raw)
+    text = html.unescape(text)
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def parse_schedule(raw_html):
+    """Розбирає rawHtml одного графіка у словник."""
+    lines = html_to_lines(raw_html)
+    joined = "\n".join(lines)
+
+    date = RE_DATE.search(joined)
+    updated = RE_UPDATED.search(joined)
+    if not date:
+        return None
+
+    groups = {}
+    for line in lines:
+        m = RE_GROUP.match(line)
+        if m:
+            groups[m.group(1)] = RE_INTERVAL.findall(m.group(2))  # [] = світло є
+
+    return {
+        "date": date.group(1),
+        "updated": updated.group(1) if updated else "",
+        "groups": groups,
     }
-    """
-    r = requests.get(API_URL, timeout=30)
+
+
+def fetch_schedules():
+    """Повертає список актуальних графіків (сьогодні, а інколи й завтра)."""
+    r = requests.get(API_URL, headers=HEADERS, timeout=60)
     r.raise_for_status()
     data = r.json()
-    # ... розбір data ...
-    raise NotImplementedError("Додай парсинг відповіді API")
+
+    result = []
+    for menu in data.get("hydra:member", []):
+        for item in menu.get("menuItems", []):
+            if item.get("children"):          # це архів — пропускаємо
+                continue
+            raw = item.get("rawHtml") or ""
+            if raw:
+                s = parse_schedule(raw)
+                if s:
+                    result.append({"kind": "schedule", **s})
+            elif item.get("description"):     # напр. повідомлення про скасування ГПВ
+                result.append({"kind": "text", "text": item["description"].strip()})
+    return result
 
 
 def to_minutes(t):
@@ -61,25 +98,38 @@ def duration(start, end):
 
 
 def format_post(s):
+    if s["kind"] == "text":
+        return "⚡️ Львівобленерго\n\n" + s["text"]
+
     d = datetime.strptime(s["date"], "%d.%m.%Y")
     lines = [
         "⏱️ Графік погодинних відключень",
         f"{WEEKDAYS[d.weekday()]}, {d.day} {MONTHS[d.month - 1]} {d.year}",
         "",
-        f"Інформація станом на {s['updated']}",
-        "",
     ]
+    if s["updated"]:
+        lines += [f"Інформація станом на {s['updated']}", ""]
+
     for group in sorted(s["groups"], key=lambda g: tuple(map(int, g.split(".")))):
         lines.append(f"Група {group}")
-        for start, end in s["groups"][group]:
-            lines.append(f"{start} — {end} ({duration(start, end)})")
+        intervals = s["groups"][group]
+        if intervals:
+            for start, end in intervals:
+                lines.append(f"{start} — {end} ({duration(start, end)})")
+        else:
+            lines.append("Відключень немає ✅")
         lines.append("")
+
     lines += [
         "Надсилай рідним та друзям, щоб вони могли спланувати свій час",
         "",
         "🔗 Підписатись  | 💬 Чат",
     ]
     return "\n".join(lines)
+
+
+def item_hash(s):
+    return hashlib.sha256(json.dumps(s, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
 def send(text):
@@ -91,16 +141,24 @@ def send(text):
 
 
 def main():
-    last = open(STATE_FILE).read().strip() if os.path.exists(STATE_FILE) else ""
+    seen = set()
+    if os.path.exists(STATE_FILE):
+        seen = {line.strip() for line in open(STATE_FILE) if line.strip()}
 
-    s = fetch_schedule()
-    h = hashlib.sha256(json.dumps(s, sort_keys=True).encode()).hexdigest()
+    schedules = fetch_schedules()
+    current = []
+    for s in schedules:
+        h = item_hash(s)
+        current.append(h)
+        if h not in seen:
+            send(format_post(s))
+            print("Надіслано:", s.get("date") or s.get("text", "")[:40])
 
-    if h != last:
-        send(format_post(s))
+    if not schedules:
+        print("Графіків у відповіді API не знайдено")
+    elif set(current) != seen:
         with open(STATE_FILE, "w") as f:
-            f.write(h)
-        print("Графік змінився — повідомлення надіслано")
+            f.write("\n".join(current) + "\n")
     else:
         print("Змін немає")
 
