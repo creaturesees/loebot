@@ -5,7 +5,7 @@
 
 Змінні середовища (GitHub → Settings → Secrets and variables → Actions):
   BOT_TOKEN — токен від @BotFather
-  CHAT_ID   — твій особистий chat id (пізніше можна замінити на @канал)
+  CHAT_ID   — chat id отримувачів через кому, напр. 111111,222222 (або @канал)
   HC_URL    — (необов'язково) пінг-URL з healthchecks.io
 """
 import hashlib
@@ -150,12 +150,23 @@ def item_hash(s):
 
 
 def send(text):
-    requests.post(
-        f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        json={"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML",
-              "disable_web_page_preview": True},
-        timeout=30,
-    ).raise_for_status()
+    """Надсилає всім отримувачам з CHAT_ID (через кому)."""
+    chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
+    ok = 0
+    for chat_id in chat_ids:
+        r = requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+                  "disable_web_page_preview": True},
+            timeout=30,
+        )
+        if r.ok:
+            ok += 1
+        else:
+            # напр. людина не натиснула Start або заблокувала бота
+            print(f"Не вдалося надіслати {chat_id}: {r.status_code} {r.text[:200]}")
+    if chat_ids and ok == 0:
+        raise RuntimeError("Не вдалося надіслати жодному отримувачу")
 
 
 def main():
