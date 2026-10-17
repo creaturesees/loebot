@@ -29,6 +29,11 @@ WEEKDAYS = ["Понеділок", "Вівторок", "Середа", "Четв�
 MONTHS = ["січня", "лютого", "березня", "квітня", "травня", "червня",
           "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
 
+# Посилання внизу поста. Порожній рядок = текст без посилання.
+LINK_GROUP = "https://t.me/lvivpoweroutage/1321"      # «Як дізнатися свою групу відключень?»
+LINK_SUBSCRIBE = "https://t.me/lvivpoweroutage/"  # «Підписатись»
+LINK_CHAT = "https://t.me/+YI1JiVsa6hNmODky"       # «Чат»
+
 RE_DATE = re.compile(r"Графік погодинних відключень на (\d{2}\.\d{2}\.\d{4})")
 RE_UPDATED = re.compile(r"Інформація станом на (\d{2}:\d{2} \d{2}\.\d{2}\.\d{4})")
 RE_GROUP = re.compile(r"Група (\d\.\d)\.\s*(.+)")
@@ -97,33 +102,44 @@ def duration(start, end):
     return f"{h} год" if h else f"{m} хв"
 
 
+def esc(t):
+    return html.escape(t, quote=False)
+
+
+def link(text, url):
+    return f'<a href="{html.escape(url)}">{esc(text)}</a>' if url else esc(text)
+
+
 def format_post(s):
     if s["kind"] == "text":
-        return "⚡️ Львівобленерго\n\n" + s["text"]
+        return "<b>⚡️ Львівобленерго</b>\n\n" + esc(s["text"])
 
     d = datetime.strptime(s["date"], "%d.%m.%Y")
     lines = [
-        "⏱️ Графік погодинних відключень",
-        f"{WEEKDAYS[d.weekday()]}, {d.day} {MONTHS[d.month - 1]} {d.year}",
+        "<b>⏱️ Графік погодинних відключень</b>",
+        f"<b>{WEEKDAYS[d.weekday()]}, {d.day} {MONTHS[d.month - 1]} {d.year}</b>",
         "",
     ]
     if s["updated"]:
-        lines += [f"Інформація станом на {s['updated']}", ""]
+        lines += [f"<i>Інформація станом на {esc(s['updated'])}</i>", ""]
 
+    blocks = []
     for group in sorted(s["groups"], key=lambda g: tuple(map(int, g.split(".")))):
-        lines.append(f"Група {group}")
+        block = [f"Група {group}"]
         intervals = s["groups"][group]
         if intervals:
             for start, end in intervals:
-                lines.append(f"{start} — {end} ({duration(start, end)})")
+                block.append(f"{start} — {end} ({duration(start, end)})")
         else:
-            lines.append("Відключень немає ✅")
-        lines.append("")
+            block.append("Відключень немає ✅")
+        blocks.append("\n".join(block))
+    lines.append("\n\n".join(blocks))
 
     lines += [
-        "Надсилай рідним та друзям, щоб вони могли спланувати свій час",
+        "Надсилай рідним та друзям, щоб вони могли спланувати свій час.",
+        link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
-        "🔗 Підписатись  | 💬 Чат",
+        f'{link("🔗 Підписатись", LINK_SUBSCRIBE)}  | {link("💬 Чат", LINK_CHAT)}',
     ]
     return "\n".join(lines)
 
@@ -135,7 +151,8 @@ def item_hash(s):
 def send(text):
     requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-        json={"chat_id": CHAT_ID, "text": text, "disable_web_page_preview": True},
+        json={"chat_id": CHAT_ID, "text": text, "parse_mode": "HTML",
+              "disable_web_page_preview": True},
         timeout=30,
     ).raise_for_status()
 
