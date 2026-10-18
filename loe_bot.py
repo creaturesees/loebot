@@ -23,7 +23,10 @@ HC_URL = os.environ.get("HC_URL", "")
 STATE_FILE = "last_hash.txt"
 
 API_URL = "https://api.loe.lviv.ua/api/menus?page=1&type=photo-grafic"
-HEADERS = {"User-Agent": "Mozilla/5.0 (loe-schedule-bot)"}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (loe-schedule-bot)",
+    "Accept": "application/ld+json, application/json;q=0.9",
+}
 
 WEEKDAYS = ["Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота", "Неділя"]
 MONTHS = ["січня", "лютого", "березня", "квітня", "травня", "червня",
@@ -75,18 +78,36 @@ def fetch_schedules():
     r.raise_for_status()
     data = r.json()
 
+    # API віддає або {"hydra:member": [...]} (JSON-LD), або одразу список меню
+    if isinstance(data, dict):
+        menus = data.get("hydra:member") or data.get("member") or [data]
+    elif isinstance(data, list):
+        menus = data
+    else:
+        menus = []
+
+    items = []
+    for menu in menus:
+        if not isinstance(menu, dict):
+            continue
+        if "menuItems" in menu:
+            items.extend(menu.get("menuItems") or [])
+        else:
+            items.append(menu)  # на випадок, якщо прийшли одразу пункти меню
+
     result = []
-    for menu in data.get("hydra:member", []):
-        for item in menu.get("menuItems", []):
-            if item.get("children"):          # це архів — пропускаємо
-                continue
-            raw = item.get("rawHtml") or ""
-            if raw:
-                s = parse_schedule(raw)
-                if s:
-                    result.append({"kind": "schedule", **s})
-            elif item.get("description"):     # напр. повідомлення про скасування ГПВ
-                result.append({"kind": "text", "text": item["description"].strip()})
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        if item.get("children"):              # це архів — пропускаємо
+            continue
+        raw = item.get("rawHtml") or ""
+        if raw:
+            s = parse_schedule(raw)
+            if s:
+                result.append({"kind": "schedule", **s})
+        elif (item.get("description") or "").strip():  # напр. скасування ГПВ
+            result.append({"kind": "text", "text": item["description"].strip()})
     return result
 
 
@@ -133,7 +154,7 @@ def format_post(s):
         else:
             block.append("Відключень немає ✅")
         blocks.append("\n".join(f"<code>{line}</code>" for line in block))
-    lines.append("<blockquote>" + "\n\n".join(blocks) + "</blockquote>")
+    lines.append("\n\n".join(blocks))
     lines.append("")
 
     lines += [
