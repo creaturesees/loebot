@@ -6,6 +6,8 @@
 Змінні середовища (GitHub → Settings → Secrets and variables → Actions):
   BOT_TOKEN — токен від @BotFather
   CHAT_ID   — chat id отримувачів через кому, напр. 111111,222222 (або @канал)
+  DISCORD_WEBHOOK — (необов'язково) URL вебхука Discord-каналу
+  DISCORD_ROLE_ID — (необов'язково) ID ролі, яку пінгувати в Discord
   HC_URL    — (необов'язково) пінг-URL з healthchecks.io
 """
 import hashlib
@@ -20,6 +22,8 @@ import requests
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID = os.environ.get("CHAT_ID", "")
 HC_URL = os.environ.get("HC_URL", "")
+DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK", "").strip()
+DISCORD_ROLE_ID = os.environ.get("DISCORD_ROLE_ID", "").strip()
 STATE_FILE = "last_hash.txt"
 
 API_URL = "https://api.loe.lviv.ua/api/menus?page=1&type=photo-grafic"
@@ -123,26 +127,48 @@ def duration(start, end):
     return f"{h} год" if h else f"{m} хв"
 
 
-def esc(t):
-    return html.escape(t, quote=False)
+# --- Розмітка: Telegram (HTML) і Discord (Markdown) ---------------------------
+
+class TelegramFmt:
+    @staticmethod
+    def esc(t): return html.escape(t, quote=False)
+    @classmethod
+    def bold(cls, t): return f"<b>{cls.esc(t)}</b>"
+    @classmethod
+    def italic(cls, t): return f"<i>{cls.esc(t)}</i>"
+    @classmethod
+    def code(cls, t): return f"<code>{cls.esc(t)}</code>"
+    @classmethod
+    def link(cls, t, url):
+        return f'<a href="{html.escape(url)}">{cls.esc(t)}</a>' if url else cls.esc(t)
 
 
-def link(text, url):
-    return f'<a href="{html.escape(url)}">{esc(text)}</a>' if url else esc(text)
+class DiscordFmt:
+    @staticmethod
+    def esc(t): return re.sub(r"([\\*_`~|>\[\]])", r"\\\1", t)
+    @classmethod
+    def bold(cls, t): return f"**{cls.esc(t)}**"
+    @classmethod
+    def italic(cls, t): return f"*{cls.esc(t)}*"
+    @staticmethod
+    def code(t): return f"`{t.replace('`', '')}`"
+    @classmethod
+    def link(cls, t, url):
+        return f"[{cls.esc(t)}](<{url}>)" if url else cls.esc(t)
 
 
-def format_post(s):
+def format_post(s, f=TelegramFmt):
     if s["kind"] == "text":
-        return "<b>⚡️ Львівобленерго</b>\n\n" + esc(s["text"])
+        return f.bold("⚡️ Львівобленерго") + "\n\n" + f.esc(s["text"])
 
     d = datetime.strptime(s["date"], "%d.%m.%Y")
     lines = [
-        "<b>⏱️ Графік погодинних відключень</b>",
-        f"<b>{WEEKDAYS[d.weekday()]}, {d.day} {MONTHS[d.month - 1]} {d.year}</b>",
+        f.bold("⏱️ Графік погодинних відключень"),
+        f.bold(f"{WEEKDAYS[d.weekday()]}, {d.day} {MONTHS[d.month - 1]} {d.year}"),
         "",
     ]
     if s["updated"]:
-        lines += [f"<i>Інформація станом на {esc(s['updated'])}</i>", ""]
+        lines += [f.italic(f"Інформація станом на {s['updated']}"), ""]
 
     blocks = []
     for group in sorted(s["groups"], key=lambda g: tuple(map(int, g.split(".")))):
@@ -153,15 +179,15 @@ def format_post(s):
                 block.append(f"{start} — {end} ({duration(start, end)})")
         else:
             block.append("Відключень немає ✅")
-        blocks.append("\n".join(f"<code>{line}</code>" for line in block))
+        blocks.append("\n".join(f.code(line) for line in block))
     lines.append("\n\n".join(blocks))
     lines.append("")
 
     lines += [
-        "Надсилай рідним та друзям, щоб вони могли спланувати свій час.",
-        link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
+        f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
+        f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
-        f'{link("🔗 Підписатись", LINK_SUBSCRIBE)}  | {link("💬 Чат", LINK_CHAT)}',
+        f'{f.link("🔗 Підписатись", LINK_SUBSCRIBE)}  | {f.link("💬 Чат", LINK_CHAT)}',
     ]
     return "\n".join(lines)
 
@@ -170,8 +196,8 @@ def item_hash(s):
     return hashlib.sha256(json.dumps(s, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
 
 
-def send(text):
-    """Надсилає всім отримувачам з CHAT_ID (через кому)."""
+def send_telegram(text):
+    """Надсилає всім отримувачам з CHAT_ID (через кому). Повертає к-ть успішних."""
     chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
     ok = 0
     for chat_id in chat_ids:
@@ -185,9 +211,38 @@ def send(text):
             ok += 1
         else:
             # напр. людина не натиснула Start або заблокувала бота
-            print(f"Не вдалося надіслати {chat_id}: {r.status_code} {r.text[:200]}")
-    if chat_ids and ok == 0:
-        raise RuntimeError("Не вдалося надіслати жодному отримувачу")
+            print(f"Telegram: не вдалося надіслати {chat_id}: {r.status_code} {r.text[:200]}")
+    return ok
+
+
+def send_discord(text):
+    """Надсилає у Discord через вебхук з пінгом ролі. Повертає 1/0."""
+    if not DISCORD_WEBHOOK:
+        return 0
+    content = text
+    allowed = {"parse": []}                      # нікого не пінгувати випадково
+    if DISCORD_ROLE_ID:
+        content = f"<@&{DISCORD_ROLE_ID}>\n{text}"
+        allowed = {"roles": [DISCORD_ROLE_ID]}   # пінгувати лише цю роль
+    r = requests.post(
+        DISCORD_WEBHOOK,
+        json={"content": content[:2000], "allowed_mentions": allowed,
+              "flags": 4},                       # 4 = без прев'ю посилань
+        timeout=30,
+    )
+    if r.ok:
+        return 1
+    print(f"Discord: помилка {r.status_code} {r.text[:200]}")
+    return 0
+
+
+def send(s):
+    ok = 0
+    if BOT_TOKEN and CHAT_ID:
+        ok += send_telegram(format_post(s, TelegramFmt))
+    ok += send_discord(format_post(s, DiscordFmt))
+    if ok == 0:
+        raise RuntimeError("Не вдалося надіслати нікуди (ні Telegram, ні Discord)")
 
 
 def main():
@@ -201,7 +256,7 @@ def main():
         h = item_hash(s)
         current.append(h)
         if h not in seen:
-            send(format_post(s))
+            send(s)
             print("Надіслано:", s.get("date") or s.get("text", "")[:40])
 
     if not schedules:
