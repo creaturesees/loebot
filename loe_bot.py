@@ -13,6 +13,8 @@ CHAT_ID = os.environ.get("CHAT_ID", "")
 HC_URL = os.environ.get("HC_URL", "")
 DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK", "").strip()
 DISCORD_ROLE_ID = os.environ.get("DISCORD_ROLE_ID", "").strip()
+TG_EMOJI_ID = os.environ.get("TG_EMOJI_ID", "").strip()
+DISCORD_EMOJI_ID = os.environ.get("DISCORD_EMOJI_ID", "").strip()
 STATE_FILE = "last_hash.txt"
 PREV_FILE = "last_schedules.json"
 HISTORY_FILE = "history.csv"
@@ -164,6 +166,11 @@ class TelegramFmt:
     @classmethod
     def link(cls, t, url):
         return f'<a href="{html.escape(url)}">{cls.esc(t)}</a>' if url else cls.esc(t)
+    @staticmethod
+    def logo(fallback):
+        if TG_EMOJI_ID.isdigit():
+            return f'<tg-emoji emoji-id="{TG_EMOJI_ID}">⚡️</tg-emoji>'
+        return fallback
 
 
 class DiscordFmt:
@@ -178,6 +185,9 @@ class DiscordFmt:
     @classmethod
     def link(cls, t, url):
         return f"[{cls.esc(t)}](<{url}>)" if url else cls.esc(t)
+    @staticmethod
+    def logo(fallback):
+        return f"<:loebot:{DISCORD_EMOJI_ID}>" if DISCORD_EMOJI_ID.isdigit() else fallback
 
 
 def format_post(s, f=TelegramFmt, changes=None):
@@ -215,7 +225,7 @@ def format_post(s, f=TelegramFmt, changes=None):
         f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
         f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
-        f'{f.link("🔗 Підписатись", LINK_SUBSCRIBE)}  | {f.link("💬 Чат", LINK_CHAT)}',
+        f'{f.logo("🔗")} {f.link("Підписатись", LINK_SUBSCRIBE)}  | {f.link("💬 Чат", LINK_CHAT)}',
     ]
     return "\n".join(lines)
 
@@ -247,7 +257,19 @@ def tg_call(method, data, files=None):
                          data=data, files=files, timeout=60)
 
 
+def plain_emoji(text):
+    return re.sub(r'<tg-emoji emoji-id="\d+">(.*?)</tg-emoji>', r"\1", text)
+
+
 def send_telegram(text, image=None):
+    ok = _send_telegram(text, image)
+    if not ok and "<tg-emoji" in text:
+        print("Telegram: повтор без кастомного емодзі")
+        ok = _send_telegram(plain_emoji(text), image)
+    return ok
+
+
+def _send_telegram(text, image=None):
     chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
     fits = tg_len(text) <= 1024
     file_id = None
