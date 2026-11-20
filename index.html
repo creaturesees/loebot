@@ -861,6 +861,7 @@ const KINDS = {
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?([+-]\d{2}:\d{2}|Z)$/;
 const ACC_GRACE = 30 * 60000;
 const ACC_PAGE_H = 1100;
+const ACC_PAGE_MAX = 3600;
 let acc = null;
 let accFilter = store.get("loe-accfilter", "em") === "all" ? "all" : "em";
 let accCity = store.get("loe-acccity", "");
@@ -944,7 +945,8 @@ async function exportAcc() {
     return { r, ct, st, hs, kd, h: Math.max(ct.length, st.length, hs.length, kd.length) * lineH + padY * 2 };
   });
   const total = laid.reduce((a, b) => a + b.h, 0), maxRow = Math.max(...laid.map(l => l.h));
-  const n = Math.min(3, Math.max(1, Math.ceil(total / ACC_PAGE_H)));
+  let n = Math.min(3, Math.max(1, Math.ceil(total / ACC_PAGE_H)));
+  if (total / n > ACC_PAGE_MAX) n = Math.ceil(total / ACC_PAGE_MAX);
   const cap = n === 1 ? Infinity : Math.max(ACC_PAGE_H, Math.ceil(total / n) + maxRow);
   const pages = [[]]; let used = 0;
   laid.forEach(l => { if (used + l.h > cap && pages[pages.length - 1].length) { pages.push([]); used = 0; } pages[pages.length - 1].push(l); used += l.h; });
