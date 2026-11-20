@@ -1,14 +1,15 @@
 import json
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import requests
 
 API = "https://power-api.loe.lviv.ua/api/pw_accidents"
-CITY_ID = os.environ.get("LOE_CITY_ID", "693")
+CITY_ID = os.environ.get("LOE_CITY_ID", "")
 OUT_FILE = "accidents.json"
-MAX_PAGES = 40
+MAX_PAGES = 150
 GRACE = timedelta(minutes=30)
 KYIV = ZoneInfo("Europe/Kyiv")
 HEADERS = {
@@ -22,11 +23,16 @@ TYPE_OFF = {0: "planned", 1: "emergency", 2: "switching", 30: "possible"}
 
 def fetch_rows():
     rows = []
-    for page in range(1, MAX_PAGES + 1):
+    page, retries = 1, 0
+    while page <= MAX_PAGES:
         r = requests.get(API, params={
             "page": page, "otg.id": "", "city.id": CITY_ID, "street.id": "",
             "_": int(datetime.now(timezone.utc).timestamp()),
         }, headers=HEADERS, timeout=60)
+        if r.status_code == 429 and retries < 3:
+            retries += 1
+            time.sleep(10 * retries)
+            continue
         r.raise_for_status()
         data = r.json()
         if isinstance(data, dict):
@@ -39,6 +45,8 @@ def fetch_rows():
         rows += members
         if not members or not has_next:
             break
+        page += 1
+        time.sleep(0.5)
     return rows
 
 
@@ -74,18 +82,20 @@ def current(rows, now):
             continue
         street = (row.get("street") or {}).get("name") or ""
         city = (row.get("city") or {}).get("name") or ""
-        if not street:
+        otg = (row.get("otg") or {}).get("name") or ""
+        if not street and not city:
             continue
         out.append({
             "id": row.get("id"),
-            "city": city,
+            "city": city.strip(),
+            "otg": otg.strip(),
             "street": street.strip(),
             "houses": houses_of(row),
             "from": start.astimezone(KYIV).isoformat() if start else None,
             "to": end.astimezone(KYIV).isoformat() if end else None,
             "kind": kind_of(row),
         })
-    out.sort(key=lambda r: (r["street"].lower(), r["from"] or ""))
+    out.sort(key=lambda r: (r["city"] != "Львів", r["city"].lower(), r["street"].lower(), r["from"] or ""))
     return out
 
 

@@ -161,12 +161,15 @@ table.sum tr.mine td { background: var(--head-bg); font-weight: 600; }
 table.acc { width: 100%; border-collapse: collapse; }
 table.acc th { color: var(--muted); font-weight: 500; text-align: left; padding: 8px 12px; font-size: 14px; border-bottom: 1px solid var(--ink); }
 table.acc td { padding: 11px 12px; border-bottom: 1px solid var(--rule); font-size: 16px; vertical-align: top; }
-table.acc td.st { font-weight: 600; box-shadow: inset 4px 0 0 var(--k, var(--off)); padding-left: 16px; }
+table.acc td.sn { font-weight: 600; }
+table.acc .cty { display: none; }
+table.acc td.st { box-shadow: inset 4px 0 0 var(--k, var(--off)); padding-left: 16px; }
 table.acc td.tm { white-space: nowrap; font-variant-numeric: tabular-nums; }
 table.acc .kd { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 table.acc .kd i { width: 12px; height: 12px; display: inline-block; }
 .acc-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
 .acc-tools .sep { flex: 1; }
+.sel { font: inherit; font-size: 15px; color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--rule); padding: 6px 2px; max-width: 260px; }
 .shots { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
 .shots figure { margin: 0; width: 260px; }
 .shots img { width: 100%; display: block; border: 1px solid var(--rule); }
@@ -216,6 +219,9 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   .acc-tools .sep { display: none; }
   table.acc th, table.acc td { padding: 9px 6px; font-size: 14px; }
   table.acc td.st { padding-left: 10px; }
+  table.acc td.sn { box-shadow: inset 4px 0 0 var(--k); padding-left: 10px; }
+  table.acc .cty { display: block; font-weight: 400; color: var(--muted); font-size: 13px; }
+  .sel { max-width: 100%; }
   table.acc td.tm { white-space: normal; }
   .shots figure { width: calc(50% - 8px); }
   .picker { left: 0; right: auto; width: min(320px, calc(100vw - 32px)); }
@@ -260,6 +266,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
     </div>
     <div class="acc-tools">
       <span class="seg" id="accFilter" role="group" aria-label="Які відключення показати"></span>
+      <select id="accCity" class="sel" aria-label="Населений пункт"></select>
       <span class="sep"></span>
       <button class="btn primary" id="accPng">Завантажити PNG</button>
     </div>
@@ -856,6 +863,7 @@ const ACC_GRACE = 30 * 60000;
 const ACC_PAGE_H = 1100;
 let acc = null;
 let accFilter = store.get("loe-accfilter", "em") === "all" ? "all" : "em";
+let accCity = store.get("loe-acccity", "");
 const kyivToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 const accTime = iso => {
   if (!iso) return "—";
@@ -865,15 +873,15 @@ const accTime = iso => {
 function accClean(data) {
   const rows = Array.isArray(data && data.rows) ? data.rows : [];
   const now = Date.now();
-  return rows.filter(r => r && typeof r.street === "string" && r.street && KINDS[r.kind]
+  return rows.filter(r => r && typeof r.street === "string" && (r.street || r.city) && KINDS[r.kind]
       && (r.from == null || ISO_RE.test(r.from)) && (r.to == null || ISO_RE.test(r.to)))
-    .map(r => ({ street: r.street.slice(0, 120), houses: (Array.isArray(r.houses) ? r.houses : []).map(String).map(h => h.slice(0, 20)).slice(0, 400),
+    .map(r => ({ city: typeof r.city === "string" && r.city ? r.city.slice(0, 80) : "—", otg: typeof r.otg === "string" ? r.otg.slice(0, 80) : "", street: r.street.slice(0, 120) || "—", houses: (Array.isArray(r.houses) ? r.houses : []).map(String).map(h => h.slice(0, 20)).slice(0, 400),
       from: r.from || null, to: r.to || null, kind: r.kind }))
     .filter(r => (!r.from || Date.parse(r.from) <= now) && (!r.to || Date.parse(r.to) + ACC_GRACE > now));
 }
 function accRows() {
   if (!acc) return [];
-  return acc.rows.filter(r => accFilter === "all" || KINDS[r.kind][2]);
+  return acc.rows.filter(r => (accFilter === "all" || KINDS[r.kind][2]) && (!accCity || r.city === accCity));
 }
 function accChanged() {
   const c = acc && typeof acc.changed === "string" && ISO_RE.test(acc.changed) ? acc.changed : null;
@@ -883,16 +891,21 @@ function renderAcc() {
   const f = document.getElementById("accFilter");
   f.innerHTML = [["em", "Аварійні"], ["all", "Усі"]].map(([id, t]) => `<button class="chip" data-f="${id}" aria-pressed="${accFilter === id}">${t}</button>`).join("");
   f.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { accFilter = b.dataset.f; store.set("loe-accfilter", accFilter); document.getElementById("accShots").innerHTML = ""; renderAcc(); });
+  const sel = document.getElementById("accCity");
+  const cities = acc ? [...new Set(acc.rows.filter(r => accFilter === "all" || KINDS[r.kind][2]).map(r => r.city))].sort((a, b) => (a !== "Львів") - (b !== "Львів") || a.localeCompare(b, "uk")) : [];
+  if (accCity && !cities.includes(accCity)) cities.unshift(accCity);
+  sel.innerHTML = `<option value="">Усі населені пункти</option>` + cities.map(c => `<option value="${esc(c)}"${c === accCity ? " selected" : ""}>${esc(c)}</option>`).join("");
+  sel.onchange = () => { accCity = sel.value; store.set("loe-acccity", accCity); document.getElementById("accShots").innerHTML = ""; renderAcc(); };
   const rows = accRows(), body = document.getElementById("accBody"), note = document.getElementById("accNote");
   document.getElementById("accPng").disabled = !rows.length;
   document.getElementById("accPng").title = rows.length ? "" : "Немає відключень для картинки";
   if (!acc) { note.textContent = ""; body.innerHTML = `<div class="empty-msg">Ще немає даних про аварійні відключення. Файл accidents.json з'явиться після наступної перевірки бота.</div>`; return; }
   const ch = accChanged();
   note.textContent = `${rows.length ? `${rows.length} ${plural(rows.length, "запис", "записи", "записів")}` : ""}${ch ? `${rows.length ? " · " : ""}список оновлено ${ch}` : ""}`;
-  if (!rows.length) { body.innerHTML = `<div class="empty-msg">Зараз ${accFilter === "em" ? "аварійних " : ""}відключень у Львові немає ✅</div>`; return; }
+  if (!rows.length) { body.innerHTML = `<div class="empty-msg">Зараз ${accFilter === "em" ? "аварійних " : ""}відключень${accCity ? ` (${esc(accCity)})` : ""} немає ✅</div>`; return; }
   body.innerHTML = `<table class="acc">
-    <tr><th>Вулиця</th><th>Будинки</th><th class="hide-sm">Тип</th><th>Вимкнено</th><th>Орієнт. увімкнуть</th></tr>
-    ${rows.map(r => { const k = KINDS[r.kind]; return `<tr><td class="st" style="--k:${k[1]}">${esc(r.street)}</td><td>${esc(r.houses.join(", ") || "—")}</td>
+    <tr><th class="hide-sm">Населений пункт</th><th>Вулиця</th><th>Будинки</th><th class="hide-sm">Тип</th><th>Вимкнено</th><th>Орієнт. увімкнуть</th></tr>
+    ${rows.map(r => { const k = KINDS[r.kind]; return `<tr><td class="st hide-sm" style="--k:${k[1]}"${r.otg ? ` title="${esc(r.otg)} громада"` : ""}>${esc(r.city)}</td><td class="sn" style="--k:${k[1]}">${esc(r.street)}<small class="cty">${esc(r.city)}</small></td><td>${esc(r.houses.join(", ") || "—")}</td>
       <td class="hide-sm"><span class="kd"><i style="background:${k[1]}"></i>${esc(k[0])}</span></td><td class="tm">${esc(accTime(r.from))}</td><td class="tm">${esc(accTime(r.to))}</td></tr>`; }).join("")}
   </table>`;
 }
@@ -918,16 +931,17 @@ async function exportAcc() {
   await document.fonts.ready;
   const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
   const mark = await loadImg("assets/watermark.png");
-  const S = 2, W = 1280, M = 24, headRow = 44, lineH = 24, padY = 12;
+  const S = 2, W = 1440, M = 24, headRow = 44, lineH = 24, padY = 12;
   const F = (w, s) => `${w} ${s}px "Fira Sans", sans-serif`;
-  const cols = { street: 280, kind: 250, from: 120, to: 150 };
-  const housesW = W - 2 * M - cols.street - cols.kind - cols.from - cols.to;
+  const cols = { city: 210, street: 250, kind: 240, from: 115, to: 150 };
+  const housesW = W - 2 * M - cols.city - cols.street - cols.kind - cols.from - cols.to;
   const mx = document.createElement("canvas").getContext("2d");
   const laid = rows.map(r => {
-    mx.font = F(600, 17); const st = wrapText(mx, r.street, cols.street - 28);
+    mx.font = F(400, 17); const ct = wrapText(mx, r.city, cols.city - 28);
+    mx.font = F(600, 17); const st = wrapText(mx, r.street, cols.street - 24);
     mx.font = F(400, 17); const hs = wrapText(mx, r.houses.join(", ") || "—", housesW - 24, ", ");
     mx.font = F(400, 16); const kd = wrapText(mx, KINDS[r.kind][0], cols.kind - 46);
-    return { r, st, hs, kd, h: Math.max(st.length, hs.length, kd.length) * lineH + padY * 2 };
+    return { r, ct, st, hs, kd, h: Math.max(ct.length, st.length, hs.length, kd.length) * lineH + padY * 2 };
   });
   const total = laid.reduce((a, b) => a + b.h, 0), maxRow = Math.max(...laid.map(l => l.h));
   const n = Math.min(3, Math.max(1, Math.ceil(total / ACC_PAGE_H)));
@@ -946,17 +960,18 @@ async function exportAcc() {
     x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
 
     x.textBaseline = "middle";
-    const cx = { street: M, houses: M + cols.street, kind: M + cols.street + housesW, from: W - M - cols.to - cols.from, to: W - M - cols.to };
+    const cx = { city: M, street: M + cols.city, houses: M + cols.city + cols.street, kind: M + cols.city + cols.street + housesW, from: W - M - cols.to - cols.from, to: W - M - cols.to };
     x.fillStyle = C.greenDark; x.fillRect(M, top, W - 2 * M, headRow);
     x.fillStyle = "#fff"; x.font = F(500, 15); x.textAlign = "left";
-    [["Вулиця", cx.street + 16], ["Будинки", cx.houses + 12], ["Тип", cx.kind + 12], ["Вимкнено", cx.from + 12], ["Орієнт. увімкнуть", cx.to + 12]].forEach(([t, px]) => x.fillText(t, px, top + headRow / 2));
+    [["Населений пункт", cx.city + 16], ["Вулиця", cx.street + 12], ["Будинки", cx.houses + 12], ["Тип", cx.kind + 12], ["Вимкнено", cx.from + 12], ["Орієнт. увімкнуть", cx.to + 12]].forEach(([t, px]) => x.fillText(t, px, top + headRow / 2));
     let y = top + headRow;
     page.forEach(l => {
       const k = KINDS[l.r.kind];
       x.fillStyle = k[1]; x.fillRect(M, y, 4, l.h - 1);
       const ly = i => y + padY + lineH * i + lineH / 2;
       x.textAlign = "left"; x.fillStyle = C.ink;
-      x.font = F(600, 17); l.st.forEach((t, i) => x.fillText(t, cx.street + 16, ly(i)));
+      x.font = F(400, 17); l.ct.forEach((t, i) => x.fillText(t, cx.city + 16, ly(i)));
+      x.font = F(600, 17); l.st.forEach((t, i) => x.fillText(t, cx.street + 12, ly(i)));
       x.font = F(400, 17); l.hs.forEach((t, i) => x.fillText(t, cx.houses + 12, ly(i)));
       x.fillStyle = k[1]; x.fillRect(cx.kind + 12, ly(0) - 6, 12, 12);
       x.fillStyle = C.ink; x.font = F(400, 16); l.kd.forEach((t, i) => x.fillText(t, cx.kind + 34, ly(i)));
