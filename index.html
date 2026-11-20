@@ -759,10 +759,11 @@ async function exportPNG() {
   x.textAlign = "right"; x.fillStyle = C.greenDark; x.font = F(600, 16);
   x.fillText("t.me/lvivpoweroutage", W - M, ly);
   cv.toBlob(b => {
+    if (!b) { alert("Браузер не дозволив створити PNG. Перевірте, чи не блокує сайт захист від відбитків (canvas)."); return; }
     const a = document.createElement("a");
     const [f, t] = pFrom <= pTo ? [pFrom, pTo] : [pTo, pFrom];
     a.href = URL.createObjectURL(b); a.download = `bez-svitla_${f}_${t}.png`;
-    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   }, "image/png");
 }
 
@@ -838,7 +839,7 @@ document.addEventListener("click", () => { if (!document.getElementById("picker"
 document.addEventListener("keydown", e => { if (e.key === "Escape") closePicker(); });
 bindDateInput("pFrom", k => { pFrom = k; });
 bindDateInput("pTo", k => { pTo = k; });
-document.getElementById("png").onclick = exportPNG;
+document.getElementById("png").onclick = () => exportPNG().catch(e => alert("Не вдалося створити PNG: " + e.message));
 
 const KINDS = {
   emergency: ["Аварійне", "#9e3430", true],
@@ -884,6 +885,7 @@ function renderAcc() {
   f.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { accFilter = b.dataset.f; store.set("loe-accfilter", accFilter); document.getElementById("accShots").innerHTML = ""; renderAcc(); });
   const rows = accRows(), body = document.getElementById("accBody"), note = document.getElementById("accNote");
   document.getElementById("accPng").disabled = !rows.length;
+  document.getElementById("accPng").title = rows.length ? "" : "Немає відключень для картинки";
   if (!acc) { note.textContent = ""; body.innerHTML = `<div class="empty-msg">Ще немає даних про аварійні відключення. Файл accidents.json з'явиться після наступної перевірки бота.</div>`; return; }
   const ch = accChanged();
   note.textContent = `${rows.length ? `${rows.length} ${plural(rows.length, "запис", "записи", "записів")}` : ""}${ch ? `${rows.length ? " · " : ""}список оновлено ${ch}` : ""}`;
@@ -985,6 +987,7 @@ async function exportAcc() {
     x.fillText(`Час увімкнення орієнтовний · Джерело: Львівобленерго${pages.length > 1 ? ` · Частина ${pi + 1} з ${pages.length}` : ""}`, M, fy);
     x.textAlign = "right"; x.fillStyle = C.greenDark; x.font = F(600, 16); x.fillText("t.me/lvivpoweroutage", W - M, fy);
     const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+    if (!blob) throw new Error("браузер не дозволив створити зображення (захист canvas)");
     urls.push(URL.createObjectURL(blob));
   }
   const stamp = `${kyivToday()}_${(ch || "").slice(0, 5).replace(":", "-")}`;
@@ -1009,7 +1012,7 @@ function showTab() {
 }
 window.addEventListener("hashchange", showTab);
 showTab();
-document.getElementById("accPng").onclick = exportAcc;
+document.getElementById("accPng").onclick = () => exportAcc().catch(e => { document.getElementById("accPng").disabled = false; alert("Не вдалося створити PNG: " + e.message); });
 fetch("accidents.json?t=" + Date.now())
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(d => { acc = { changed: d && d.changed, rows: accClean(d) }; renderAcc(); })
