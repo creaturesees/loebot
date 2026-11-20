@@ -2,11 +2,11 @@ name: LOE schedule check
 
 on:
   schedule:
-    - cron: "*/5 * * * *"   # кожні 5 хв (GitHub може запізнюватись на кілька хвилин)
-  workflow_dispatch:         # кнопка ручного запуску у вкладці Actions
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 permissions:
-  contents: write            # щоб комітити last_hash.txt
+  contents: write
 
 concurrency:
   group: loe-check
@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests
+      - run: pip install requests pillow
 
       - name: Check schedule
         env:
@@ -37,5 +37,5 @@ jobs:
         run: |
           git config user.name "loe-bot"
           git config user.email "loe-bot@users.noreply.github.com"
-          git add last_hash.txt 2>/dev/null || true
+          for f in last_hash.txt last_schedules.json history.csv; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --cached --quiet || (git commit -m "update schedule hash" && git push)
