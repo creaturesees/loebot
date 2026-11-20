@@ -35,9 +35,13 @@ jobs:
           DISCORD_EMOJI_ID: ${{ secrets.DISCORD_EMOJI_ID }}
         run: python loe_bot.py
 
+      - name: Check emergency outages
+        continue-on-error: true
+        run: python loe_accidents.py
+
       - name: Save state
         run: |
           git config user.name "loe-bot"
           git config user.email "loe-bot@users.noreply.github.com"
-          for f in last_hash.txt last_schedules.json history.csv; do if [ -f "$f" ]; then git add "$f"; fi; done
+          for f in last_hash.txt last_schedules.json history.csv accidents.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --cached --quiet || (git commit -m "update schedule hash" && git push)
