@@ -31,6 +31,8 @@ jobs:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
           HC_URL: ${{ secrets.HC_URL }}
+          TG_EMOJI_ID: ${{ secrets.TG_EMOJI_ID }}
+          DISCORD_EMOJI_ID: ${{ secrets.DISCORD_EMOJI_ID }}
         run: python loe_bot.py
 
       - name: Save state
