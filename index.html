@@ -980,12 +980,24 @@ async function exportAcc() {
       x.fillStyle = C.rule; x.fillRect(M, y - 1, W - 2 * M, 1);
     });
 
-    const areaTop = top + headRow, areaH = Math.max(bodyH, 200), mid = areaTop + Math.min(bodyH, areaH) / 2;
-    const size = Math.min(380, Math.max(160, bodyH * 0.7));
+    const areaTop = top + headRow;
+    const wmRows = Math.max(1, Math.round(bodyH / 620));
+    const wmCols = W / bodyH > 3.2 ? 2 : 1;
+    const size = Math.round(Math.min(340, Math.max(140, Math.min(bodyH / wmRows, W / wmCols) * 0.6)));
+    const spots = [];
+    for (let i = 0; i < wmRows; i++) {
+      const cy = areaTop + bodyH * (i + 0.5) / wmRows;
+      if (wmCols === 2) spots.push([W * 0.27, cy], [W * 0.73, cy]);
+      else spots.push([wmRows > 1 ? W * (i % 2 ? 0.68 : 0.32) : W / 2, cy]);
+    }
     x.save();
-    if (mark) { x.globalAlpha = 0.11; x.drawImage(mark, W / 2 - size / 2, mid - size / 2 - 20, size, size); }
-    x.globalAlpha = 0.13; x.fillStyle = C.greenDark; x.textAlign = "center"; x.font = `700 ${Math.round(size * 0.15)}px "Carlito", sans-serif`;
-    x.fillText("t.me/lvivpoweroutage", W / 2, mid + size / 2 + 6);
+    x.textAlign = "center"; x.font = `700 ${Math.round(size * 0.15)}px "Carlito", sans-serif`;
+    spots.forEach(([wx, wy]) => {
+      const blockTop = wy - (size * 1.18) / 2;
+      if (mark) { x.globalAlpha = 0.11; x.drawImage(mark, wx - size / 2, blockTop, size, size); }
+      x.globalAlpha = 0.13; x.fillStyle = C.greenDark;
+      x.fillText("t.me/lvivpoweroutage", wx, blockTop + size * 1.1);
+    });
     x.restore();
 
     const blob = await new Promise(res => cv.toBlob(res, "image/png"));
