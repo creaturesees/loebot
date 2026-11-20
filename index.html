@@ -61,7 +61,7 @@ section:last-of-type { border-bottom: 0; }
 .btn:disabled { opacity: .45; cursor: default; }
 
 .days { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.grid { display: grid; grid-template-columns: 116px repeat(12, 1fr); }
+.grid { display: grid; grid-template-columns: 116px repeat(12, minmax(0, 1fr)); }
 .grid .h { background: var(--green-dark); color: #fff; font-weight: 500; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
 .grid .h.t { justify-content: flex-start; padding-left: 12px; }
 .grid .s { background: var(--head-bg); height: 46px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
@@ -81,9 +81,9 @@ section:last-of-type { border-bottom: 0; }
 .chip { background: #fff; border: 1px solid var(--rule); padding: 6px 12px; cursor: pointer; font-weight: 500; font-variant-numeric: tabular-nums; }
 .chip[aria-pressed="true"] { background: var(--green-dark); border-color: var(--green-dark); color: #fff; }
 
-.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .dow { font-size: 14px; color: var(--muted); padding: 0 8px 4px; }
-.day { height: 84px; border: 0; padding: 8px 10px; text-align: left; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; background: var(--head-bg); color: var(--ink); }
+.day { min-width: 0; overflow: hidden; height: 84px; border: 0; padding: 8px 10px; text-align: left; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; background: var(--head-bg); color: var(--ink); }
 .day.empty { background: none; cursor: default; }
 .day b { font-weight: 600; font-size: 17px; }
 .day span { font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -97,6 +97,32 @@ table.sum th { background: var(--green-dark); color: #fff; font-weight: 500; tex
 table.sum th:first-child, table.sum td:first-child { text-align: left; }
 table.sum td { padding: 11px 12px; border-bottom: 1px solid var(--rule); text-align: right; font-size: 16px; }
 table.sum tr.mine td { background: var(--head-bg); font-weight: 600; }
+
+.versions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 6px; margin-bottom: 18px; }
+.versions .lbl { align-self: center; color: var(--muted); font-size: 15px; margin-right: 6px; }
+.ver { background: #fff; border: 1px solid var(--rule); padding: 6px 12px; cursor: pointer; text-align: left; line-height: 1.25; }
+.ver b { display: block; font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; }
+.ver small { color: var(--muted); font-size: 13px; }
+.ver[aria-pressed="true"] { background: var(--green-dark); border-color: var(--green-dark); color: #fff; }
+.ver[aria-pressed="true"] small { color: #dee9d6; }
+.changes { margin-top: 22px; }
+.changes h3 { font: 700 22px/1.2 "Carlito", sans-serif; margin: 0 0 10px; }
+.changes ul { list-style: none; margin: 0; padding: 0; }
+.changes li { padding: 8px 0; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 22px 64px 1fr auto; gap: 10px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.changes li i { width: 14px; height: 14px; display: inline-block; align-self: center; }
+.changes li .d { color: var(--muted); white-space: nowrap; }
+.day .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
+.day .badge { font-size: 12px; font-weight: 600; padding: 1px 6px; background: rgba(255,255,255,.85); color: var(--ink); white-space: nowrap; }
+.period { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+.period .presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.period label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 15px; }
+.period input[type=date] { font: inherit; color: var(--ink); border: 1px solid var(--rule); padding: 6px 8px; background: #fff; }
+.period .sep { flex: 1; }
+.kpis { display: flex; flex-wrap: wrap; gap: 0; margin-bottom: 18px; border: 1px solid var(--rule); }
+.kpis div { padding: 12px 18px; border-right: 1px solid var(--rule); min-width: 160px; }
+.kpis div:last-child { border-right: 0; }
+.kpis small { display: block; color: var(--muted); font-size: 14px; }
+.kpis b { font-weight: 600; font-size: 22px; font-variant-numeric: tabular-nums; }
 
 .empty-msg { padding: 28px; background: var(--head-bg); color: var(--muted); }
 footer { max-width: 1240px; margin: 0 auto; padding: 0 32px 40px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 15px; }
@@ -115,7 +141,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   footer { padding: 0 16px 32px; }
   .bar h2 { font-size: 24px; }
   .nav { margin-left: 0; }
-  .grid { grid-template-columns: 92px repeat(12, 1fr); }
+  .grid { grid-template-columns: 92px repeat(12, minmax(0, 1fr)); }
   .grid .h { font-size: 13px; height: 40px; }
   .grid .s { font-size: 13px; height: 40px; }
   .grid .s.t { font-size: 12px; padding-left: 8px; }
@@ -126,6 +152,12 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   .day b { font-size: 15px; }
   .day span { font-size: 12px; }
   .hide-sm { display: none; }
+  .changes li { grid-template-columns: 18px 44px 1fr; }
+  .changes li .d { grid-column: 3; }
+  .day .badge { font-size: 10px; line-height: 14px; min-width: 14px; text-align: center; padding: 0 3px; background: var(--orange); color: #fff; border-radius: 7px; }
+  .day .badge .ar { display: none; }
+  .period .sep { display: none; }
+  .kpis div { min-width: 50%; border-bottom: 1px solid var(--rule); }
   table.sum td, table.sum th { padding: 10px 6px; font-size: 14px; }
 }
 </style>
@@ -159,7 +191,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   <section>
     <div class="bar">
       <h2 id="monthTitle">—</h2>
-      <span class="note">Скільки годин не було світла за день</span>
+      <span class="note">Скільки годин не було світла за день · ↻ — скільки разів змінювали графік</span>
       <div class="nav">
         <button id="mPrev" aria-label="Попередній місяць">‹</button>
         <button id="mNext" aria-label="Наступний місяць">›</button>
@@ -179,10 +211,16 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
 
   <section>
     <div class="bar">
-      <h2 id="sumTitle">Підсумок місяця</h2>
-      <span class="note">Сума за дні, для яких є графік</span>
-      <div class="nav"><button class="btn primary" id="png">Завантажити PNG</button></div>
+      <h2 id="sumTitle">Підсумок за період</h2>
     </div>
+    <div class="period">
+      <div class="presets" id="presets"></div>
+      <span class="sep"></span>
+      <label>з <input type="date" id="pFrom"></label>
+      <label>по <input type="date" id="pTo"></label>
+      <button class="btn primary" id="png">Завантажити PNG</button>
+    </div>
+    <div class="kpis" id="kpis"></div>
     <div id="sum"></div>
   </section>
 </main>
@@ -196,22 +234,15 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
 const GROUPS = ["1.1","1.2","2.1","2.2","3.1","3.2","4.1","4.2","5.1","5.2","6.1","6.2"];
 const MONTHS = ["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"];
 const MONTHS_GEN = ["січня","лютого","березня","квітня","травня","червня","липня","серпня","вересня","жовтня","листопада","грудня"];
-const MONTHS_LOC = ["січні","лютому","березні","квітні","травні","червні","липні","серпні","вересні","жовтні","листопаді","грудні"];
 const WEEKDAYS = ["Неділя","Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота"];
 const DOW = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
 const C = { green: "#5d894a", greenDark: "#426334", orange: "#ed952c", ink: "#1f2420", muted: "#6e756c", rule: "#dbe0d6", headBg: "#f1f4ee",
-  on: "#e3eddc", h: ["#ecd3c4", "#d9a089", "#bf6455", "#9e3430"] };
+  on: "#e3eddc", off: "#9e3430", h: ["#ecd3c4", "#d9a089", "#bf6455", "#9e3430"] };
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch {} }
 };
-
-let days = {};
-let group = store.get("loe-group", "1.1");
-if (!GROUPS.includes(group)) group = "1.1";
-let month = new Date(); month = new Date(month.getFullYear(), month.getMonth(), 1);
-let selected = null;
 
 const pad = n => String(n).padStart(2, "0");
 const esc = v => String(v).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
@@ -221,6 +252,17 @@ const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate(
 const dateOf = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
 const toMin = t => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 const hhmm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const addDays = (k, n) => { const d = dateOf(k); d.setDate(d.getDate() + n); return keyOf(d); };
+const fmtDate = k => { const d = dateOf(k); return `${d.getDate()} ${MONTHS_GEN[d.getMonth()]} ${d.getFullYear()}`; };
+const timeOf = upd => (upd || "").split(" ")[0] || "—";
+
+let days = {};
+let group = store.get("loe-group", "1.1");
+if (!GROUPS.includes(group)) group = "1.1";
+let month = new Date(); month = new Date(month.getFullYear(), month.getMonth(), 1);
+let selected = keyOf(new Date());
+let versionIdx = null;
+let pFrom, pTo, preset = store.get("loe-preset", "month");
 
 function hoursShort(min) {
   if (min == null) return "—";
@@ -233,6 +275,12 @@ function hoursLong(min) {
   const h = Math.floor(min / 60), m = min % 60;
   if (h && m) return `${h} год ${m} хв`;
   return h ? `${h} год` : `${m} хв`;
+}
+function plural(n, one, few, many) {
+  const a = n % 10, b = n % 100;
+  if (a === 1 && b !== 11) return one;
+  if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return few;
+  return many;
 }
 
 function parseCSV(text) {
@@ -259,6 +307,20 @@ function slots(iv) {
   }
   return out;
 }
+const minutesOf = iv => iv ? iv.reduce((s, [a, b]) => s + toMin(b) - toMin(a), 0) : null;
+const sameIv = (a, b) => JSON.stringify(a || []) === JSON.stringify(b || []);
+
+function groupChanges(prev, cur) {
+  const out = [];
+  for (const g of GROUPS) {
+    const o = prev[g], n = cur[g];
+    if (o === undefined && n === undefined) continue;
+    if (sameIv(o, n)) continue;
+    const delta = (minutesOf(n) || 0) - (minutesOf(o) || 0);
+    out.push({ g, o: o || [], n: n || [], delta });
+  }
+  return out;
+}
 
 function buildDays(rows) {
   const [head, ...body] = rows;
@@ -278,13 +340,12 @@ function buildDays(rows) {
   const out = {};
   for (const [k, vs] of Object.entries(versions)) {
     const list = Object.values(vs).sort((x, y) => (x.at + x.updated).localeCompare(y.at + y.updated));
-    const last = list[list.length - 1], prev = list.length > 1 ? list[list.length - 2] : null;
-    const minutes = {};
-    for (const g of GROUPS) {
-      const iv = last.groups[g];
-      minutes[g] = iv ? iv.reduce((s, [a, b]) => s + toMin(b) - toMin(a), 0) : null;
-    }
-    out[k] = { updated: last.updated, groups: last.groups, prev: prev && prev.groups, minutes, versions: list.length };
+    list.forEach((v, i) => {
+      v.minutes = {}; for (const g of GROUPS) v.minutes[g] = minutesOf(v.groups[g]);
+      v.changes = i ? groupChanges(list[i - 1].groups, v.groups) : null;
+    });
+    const last = list[list.length - 1];
+    out[k] = { list, last, minutes: last.minutes, updates: list.length - 1 };
   }
   return out;
 }
@@ -305,9 +366,16 @@ function heatHex(min) {
 
 function renderMeta() {
   const keys = Object.keys(days).sort();
-  const last = keys.length ? days[keys[keys.length - 1]] : null;
+  const last = keys.length ? days[keys[keys.length - 1]].last : null;
   document.getElementById("meta").innerHTML = last && last.updated
     ? `<small>Останнє оновлення</small><b>${esc(last.updated)}</b>` : "";
+}
+
+function changeLine(c) {
+  const ivs = a => a.length ? a.map(([x, y]) => `${x}–${y}`).join(", ") : "без відключень";
+  const color = c.delta > 0 ? "var(--off)" : c.delta < 0 ? "var(--cancelled)" : "var(--orange)";
+  const what = c.delta > 0 ? `+${hoursLong(c.delta)}` : c.delta < 0 ? `−${hoursLong(-c.delta)}` : "зсув у часі";
+  return `<li><i style="background:${color}"></i><b>${c.g}</b><span>${esc(ivs(c.o))} → ${esc(ivs(c.n))}</span><span class="d">${what}</span></li>`;
 }
 
 function renderDay() {
@@ -316,26 +384,36 @@ function renderDay() {
   document.getElementById("dayTitle").textContent = `${WEEKDAYS[d.getDay()]}, ${d.getDate()} ${MONTHS_GEN[d.getMonth()]} ${d.getFullYear()}`;
   const info = days[selected];
   const note = document.getElementById("dayNote");
-  if (!info) {
-    note.textContent = "";
-    body.innerHTML = `<div class="empty-msg">Для цього дня графіка немає.</div>`;
-    return;
+  if (!info) { note.textContent = ""; body.innerHTML = `<div class="empty-msg">Для цього дня графіка немає.</div>`; return; }
+  const list = info.list;
+  if (versionIdx == null || versionIdx >= list.length) versionIdx = list.length - 1;
+  const v = list[versionIdx], prev = versionIdx ? list[versionIdx - 1] : null;
+  note.textContent = info.updates
+    ? `Графік змінювали ${info.updates} ${plural(info.updates, "раз", "рази", "разів")} за день` : "";
+
+  let html = "";
+  if (list.length > 1) {
+    html += `<div class="versions"><span class="lbl">Версії графіка:</span>`;
+    list.forEach((x, i) => {
+      const sub = i === 0 ? "перша" : x.changes.length ? `змінено ${x.changes.length} ${plural(x.changes.length, "групу", "групи", "груп")}` : "уточнено час";
+      html += `<button class="ver" data-v="${i}" aria-pressed="${i === versionIdx}"><b>${esc(timeOf(x.updated))}</b><small>${sub}</small></button>`;
+    });
+    html += `</div>`;
   }
-  note.textContent = `Станом на ${info.updated || "—"}` + (info.versions > 1 ? ` · оновлювався ${info.versions} раз(и)` : "");
   const ns = {}, os = {};
-  for (const g of GROUPS) { ns[g] = slots(info.groups[g]); os[g] = info.prev ? slots(info.prev[g]) : null; }
+  for (const g of GROUPS) { ns[g] = slots(v.groups[g]); os[g] = prev ? slots(prev.groups[g]) : null; }
   const cls = (g, i) => {
     const n = ns[g][i], o = os[g];
     if (o && n && !o[i]) return "c extra";
     if (o && !n && o[i]) return "c cancelled";
     return n ? "c off" : "c";
   };
-  let html = `<div class="days">`;
+  html += `<div class="days">`;
   for (let half = 0; half < 2; half++) {
     html += `<div class="grid"><div class="h t">Час</div>`;
     html += GROUPS.map(g => `<div class="h">${g}</div>`).join("");
     html += `<div class="s t">Год. за добу</div>`;
-    html += GROUPS.map(g => `<div class="s${g === group ? " mine" : ""}">${hoursShort(info.minutes[g])}</div>`).join("");
+    html += GROUPS.map(g => `<div class="s${g === group ? " mine" : ""}">${hoursShort(v.minutes[g])}</div>`).join("");
     for (let r = 0; r < 24; r++) {
       const i = half * 24 + r;
       html += `<div class="t r">${hhmm(i * 30)}–${hhmm(i * 30 + 30)}</div>`;
@@ -346,10 +424,15 @@ function renderDay() {
   html += `</div><div class="legend">
     <span><i style="background:var(--on)"></i>Є світло</span>
     <span><i style="background:var(--off)"></i>Немає світла</span>
-    ${info.prev ? `<span><i style="background:var(--cancelled)"></i>Відключення скасоване</span>
+    ${prev ? `<span><i style="background:var(--cancelled)"></i>Відключення скасоване</span>
     <span><i style="background:var(--extra)"></i>Додаткове відключення</span>` : ""}
   </div>`;
+  if (prev && v.changes.length) {
+    html += `<div class="changes"><h3>Що змінилося о ${esc(timeOf(v.updated))} (порівняно з ${esc(timeOf(prev.updated))})</h3>`;
+    html += `<ul>${v.changes.map(changeLine).join("")}</ul></div>`;
+  }
   body.innerHTML = html;
+  body.querySelectorAll(".ver").forEach(b => b.onclick = () => { versionIdx = Number(b.dataset.v); renderDay(); });
 }
 
 function renderChips() {
@@ -378,106 +461,192 @@ function renderCal() {
     const b = document.createElement("button");
     b.className = "day" + (min == null ? " nodata" : "") + (dark ? " dark" : "") + (k === selected ? " sel" : "") + (k === today ? " today" : "");
     b.style.background = bg;
-    b.innerHTML = `<b>${d}</b><span>${min == null ? "—" : hoursLong(min)}</span>`;
-    b.onclick = () => { selected = k; render(); document.getElementById("daySec").scrollIntoView({ behavior: "smooth" }); };
+    const badge = info && info.updates ? `<span class="badge" title="Змін графіка за день"><span class="ar">↻ </span>${info.updates}</span>` : "";
+    b.innerHTML = `<div class="top-row"><b>${d}</b>${badge}</div><span>${min == null ? "—" : hoursLong(min)}</span>`;
+    b.onclick = () => { selected = k; versionIdx = null; render(); document.getElementById("daySec").scrollIntoView({ behavior: "smooth" }); };
     cal.appendChild(b);
   }
 }
 
-function monthStats() {
-  const y = month.getFullYear(), m = month.getMonth(), n = new Date(y, m + 1, 0).getDate();
-  return GROUPS.map(g => {
+const PRESETS = [
+  ["month", "Цей місяць"], ["prev", "Минулий місяць"], ["7", "7 днів"], ["30", "30 днів"], ["all", "Увесь час"]
+];
+function applyPreset(id) {
+  const t = new Date(), tk = keyOf(t);
+  if (id === "month") { pFrom = keyOf(new Date(t.getFullYear(), t.getMonth(), 1)); pTo = keyOf(new Date(t.getFullYear(), t.getMonth() + 1, 0)); }
+  else if (id === "prev") { pFrom = keyOf(new Date(t.getFullYear(), t.getMonth() - 1, 1)); pTo = keyOf(new Date(t.getFullYear(), t.getMonth(), 0)); }
+  else if (id === "7") { pFrom = addDays(tk, -6); pTo = tk; }
+  else if (id === "30") { pFrom = addDays(tk, -29); pTo = tk; }
+  else if (id === "all") { const ks = Object.keys(days).sort(); pFrom = ks[0] || tk; pTo = ks[ks.length - 1] || tk; }
+  preset = id; store.set("loe-preset", id);
+}
+function periodKeys() {
+  const out = []; let k = pFrom <= pTo ? pFrom : pTo; const end = pFrom <= pTo ? pTo : pFrom;
+  while (k <= end && out.length < 1000) { out.push(k); k = addDays(k, 1); }
+  return out;
+}
+function periodStats() {
+  const keys = periodKeys();
+  const groups = GROUPS.map(g => {
     let total = 0, known = 0, withOut = 0; const perDay = [];
-    for (let d = 1; d <= n; d++) {
-      const info = days[keyOf(new Date(y, m, d))], v = info ? info.minutes[g] : null;
+    for (const k of keys) {
+      const info = days[k], v = info ? info.minutes[g] : null;
       perDay.push(v); if (v != null) { known++; total += v; if (v > 0) withOut++; }
     }
     return { g, total, known, withOut, avg: known ? Math.round(total / known) : null, perDay };
   });
+  const updates = keys.map(k => days[k] ? days[k].updates : null);
+  const daysKnown = updates.filter(u => u != null).length;
+  const totalUpdates = updates.reduce((s, u) => s + (u || 0), 0);
+  return { keys, groups, updates, daysKnown, totalUpdates };
+}
+function periodLabel() {
+  const [a, b] = pFrom <= pTo ? [pFrom, pTo] : [pTo, pFrom];
+  const da = dateOf(a), db = dateOf(b);
+  if (a === b) return fmtDate(a);
+  if (da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth())
+    return `${da.getDate()}–${db.getDate()} ${MONTHS_GEN[db.getMonth()]} ${db.getFullYear()}`;
+  if (da.getFullYear() === db.getFullYear())
+    return `${da.getDate()} ${MONTHS_GEN[da.getMonth()]} – ${db.getDate()} ${MONTHS_GEN[db.getMonth()]} ${db.getFullYear()}`;
+  return `${fmtDate(a)} – ${fmtDate(b)}`;
 }
 
-function renderSum() {
-  const m = month.getMonth();
-  document.getElementById("sumTitle").textContent = `Підсумок: ${MONTHS[m].toLowerCase()} ${month.getFullYear()}`;
-  const st = monthStats(), any = st.some(s => s.known);
-  document.getElementById("png").disabled = !any;
-  document.getElementById("sum").innerHTML = any ? `<table class="sum">
-    <tr><th>Група</th><th class="hide-sm">Днів з графіком</th><th class="hide-sm">Днів з відключеннями</th><th>Всього без світла</th><th>В середньому за день</th></tr>
-    ${st.map(s => `<tr class="${s.g === group ? "mine" : ""}"><td>${s.g}</td><td class="hide-sm">${s.known}</td><td class="hide-sm">${s.withOut}</td><td>${hoursLong(s.total)}</td><td>${hoursLong(s.avg)}</td></tr>`).join("")}
-  </table>` : `<div class="empty-msg">За цей місяць даних немає.</div>`;
+function renderPeriod() {
+  const pr = document.getElementById("presets");
+  pr.innerHTML = "";
+  for (const [id, label] of PRESETS) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = label; b.setAttribute("aria-pressed", String(id === preset));
+    b.onclick = () => { applyPreset(id); renderPeriod(); };
+    pr.appendChild(b);
+  }
+  document.getElementById("pFrom").value = pFrom;
+  document.getElementById("pTo").value = pTo;
+  document.getElementById("sumTitle").textContent = `Підсумок: ${periodLabel()}`;
+  const st = periodStats();
+  const mine = st.groups.find(s => s.g === group);
+  document.getElementById("png").disabled = !st.daysKnown;
+  document.getElementById("kpis").innerHTML = st.daysKnown ? `
+    <div><small>Днів з графіком</small><b>${st.daysKnown} з ${st.keys.length}</b></div>
+    <div><small>Змін графіка</small><b>${st.totalUpdates}</b></div>
+    <div><small>Група ${group}: без світла</small><b>${hoursLong(mine.total)}</b></div>
+    <div><small>Група ${group}: в середньому</small><b>${hoursLong(mine.avg)} / день</b></div>` : "";
+  document.getElementById("sum").innerHTML = st.daysKnown ? `<table class="sum">
+    <tr><th>Група</th><th class="hide-sm">Днів з відключеннями</th><th>Всього без світла</th><th>В середньому за день</th></tr>
+    ${st.groups.map(s => `<tr class="${s.g === group ? "mine" : ""}"><td>${s.g}</td><td class="hide-sm">${s.withOut} з ${s.known}</td><td>${hoursLong(s.total)}</td><td>${hoursLong(s.avg)}</td></tr>`).join("")}
+  </table>` : `<div class="empty-msg">За цей період даних немає.</div>`;
 }
 
 async function exportPNG() {
-  const y = month.getFullYear(), m = month.getMonth(), n = new Date(y, m + 1, 0).getDate();
-  const st = monthStats();
+  const st = periodStats();
   await document.fonts.ready;
   const logo = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = "assets/logo-mark.png"; });
-  const S = 2, M = 32, headH = 150, labelW = 64, cell = 38, totalW = 140, rowH = 40, top = headH + 36;
-  const W = M * 2 + labelW + n * cell + totalW;
-  const H = top + rowH * 13 + 90;
-  const c = document.createElement("canvas"); c.width = W * S; c.height = H * S;
-  const x = c.getContext("2d"); x.scale(S, S);
-  const fira = w => `${w} {s}px "Fira Sans", sans-serif`;
-  const F = (w, s) => fira(w).replace("{s}", s);
+  const heatmap = st.keys.length <= 31;
+  const S = 2, M = 32, headH = 150, labelW = 76, rowH = 40;
+  const totalW = 150, avgW = 150;
+  const top = headH + 36;
+  const W = heatmap ? Math.max(1100, M * 2 + labelW + st.keys.length * 38 + totalW) : 1280;
+  const cell = heatmap ? Math.floor((W - M * 2 - labelW - totalW) / st.keys.length) : 0;
+  const rows = 12 + (heatmap ? 1 : 0);
+  const H = top + rowH * (rows + 1) + 96;
+  const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
+  const x = cv.getContext("2d"); x.scale(S, S);
+  const F = (w, s) => `${w} ${s}px "Fira Sans", sans-serif`;
   x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
   x.fillStyle = C.green; x.fillRect(0, 0, W, headH);
   let tx = M;
   if (logo) { const lh = 64, lw = logo.width * lh / logo.height; x.drawImage(logo, M, (headH - lh) / 2, lw, lh); tx = M + lw + 28; }
-  x.textBaseline = "alphabetic";
+  x.textBaseline = "alphabetic"; x.textAlign = "left";
   x.fillStyle = "#fff"; x.font = `700 44px "Carlito", sans-serif`;
-  x.fillText(`Без світла у ${MONTHS_LOC[m]} ${y}`, tx, 76);
+  x.fillText("Без світла · Львів", tx, 76);
   x.fillStyle = C.orange; x.font = `700 26px "Carlito", sans-serif`;
-  x.fillText("Години без електроенергії за добу, по групах", tx, 114);
-  x.textBaseline = "middle"; x.textAlign = "center";
-  const gx = M + labelW;
-  x.fillStyle = C.greenDark; x.fillRect(M, top, W - 2 * M, rowH);
-  x.fillStyle = "#fff"; x.font = F(500, 16);
-  x.textAlign = "left"; x.fillText("Група", M + 10, top + rowH / 2); x.textAlign = "center";
-  for (let d = 1; d <= n; d++) x.fillText(String(d), gx + (d - 1) * cell + cell / 2, top + rowH / 2);
-  x.textAlign = "right"; x.fillText("Всього", W - M - 12, top + rowH / 2);
-  st.forEach((s, i) => {
-    const ry = top + rowH * (i + 1);
-    x.textAlign = "left"; x.fillStyle = C.ink; x.font = F(600, 17);
-    x.fillText(s.g, M + 10, ry + rowH / 2);
-    s.perDay.forEach((v, d) => {
-      const cx = gx + d * cell;
-      x.fillStyle = heatHex(v); x.fillRect(cx + 1, ry + 1, cell - 2, rowH - 2);
-      if (v != null) {
-        x.fillStyle = v >= 480 ? "#fff" : C.ink; x.textAlign = "center"; x.font = F(500, 14);
-        x.fillText(hoursShort(v), cx + cell / 2, ry + rowH / 2);
-      }
+  x.fillText(periodLabel(), tx, 114);
+  x.textAlign = "right"; x.fillStyle = "#dee9d6"; x.font = F(400, 15);
+  x.fillText("Змін графіка за період", W - M, 76);
+  x.fillStyle = "#fff"; x.font = F(600, 26);
+  x.fillText(String(st.totalUpdates), W - M, 112);
+  x.textBaseline = "middle";
+
+  if (heatmap) {
+    const gx = M + labelW;
+    x.fillStyle = C.greenDark; x.fillRect(M, top, W - 2 * M, rowH);
+    x.fillStyle = "#fff"; x.font = F(500, 15); x.textAlign = "left";
+    x.fillText("Група", M + 10, top + rowH / 2);
+    x.textAlign = "center";
+    st.keys.forEach((k, i) => {
+      const d = dateOf(k), lbl = (i === 0 || d.getDate() === 1) ? `${d.getDate()}.${pad(d.getMonth() + 1)}` : String(d.getDate());
+      x.font = F(500, lbl.length > 2 ? 12 : 15);
+      x.fillText(lbl, gx + i * cell + cell / 2, top + rowH / 2);
     });
-    x.textAlign = "right"; x.fillStyle = C.ink; x.font = F(600, 17);
-    x.fillText(s.known ? hoursLong(s.total) : "—", W - M - 12, ry + rowH / 2);
-    x.fillStyle = C.rule; x.fillRect(gx + n * cell, ry + rowH - 1, totalW, 1);
-  });
-  const ly = top + rowH * 13 + 40;
-  x.textAlign = "left"; x.font = F(400, 16);
-  let lx = M;
-  [["0 год", C.on], ["до 4", C.h[0]], ["4–8", C.h[1]], ["8–12", C.h[2]], ["12+", C.h[3]], ["немає даних", C.headBg]].forEach(([t, col]) => {
-    x.fillStyle = col; x.fillRect(lx, ly - 10, 20, 20);
-    x.fillStyle = C.ink; x.fillText(t, lx + 30, ly); lx += 30 + x.measureText(t).width + 30;
-  });
+    x.textAlign = "right"; x.font = F(500, 15); x.fillText("Всього", W - M - 12, top + rowH / 2);
+    st.groups.forEach((s, gi) => {
+      const ry = top + rowH * (gi + 1);
+      x.textAlign = "left"; x.fillStyle = C.ink; x.font = F(600, 17); x.fillText(s.g, M + 10, ry + rowH / 2);
+      s.perDay.forEach((v, i) => {
+        const cx = gx + i * cell;
+        x.fillStyle = heatHex(v); x.fillRect(cx + 1, ry + 1, cell - 2, rowH - 2);
+        if (v != null) { x.fillStyle = v >= 480 ? "#fff" : C.ink; x.textAlign = "center"; x.font = F(500, 14); x.fillText(hoursShort(v), cx + cell / 2, ry + rowH / 2); }
+      });
+      x.textAlign = "right"; x.fillStyle = C.ink; x.font = F(600, 17);
+      x.fillText(s.known ? hoursLong(s.total) : "—", W - M - 12, ry + rowH / 2);
+      x.fillStyle = C.rule; x.fillRect(gx + st.keys.length * cell, ry + rowH - 1, W - M - gx - st.keys.length * cell, 1);
+    });
+    const uy = top + rowH * 13;
+    x.fillStyle = C.headBg; x.fillRect(M, uy, W - 2 * M, rowH);
+    x.textAlign = "left"; x.fillStyle = C.muted; x.font = F(400, 14); x.fillText("Змін", M + 10, uy + rowH / 2);
+    st.updates.forEach((u, i) => { if (u) { x.textAlign = "center"; x.fillStyle = C.ink; x.font = F(600, 14); x.fillText(String(u), gx + i * cell + cell / 2, uy + rowH / 2); } });
+    x.textAlign = "right"; x.fillStyle = C.ink; x.font = F(600, 17); x.fillText(String(st.totalUpdates), W - M - 12, uy + rowH / 2);
+  } else {
+    const barX = M + labelW, barW = W - 2 * M - labelW - totalW - avgW - 24;
+    x.fillStyle = C.greenDark; x.fillRect(M, top, W - 2 * M, rowH);
+    x.fillStyle = "#fff"; x.font = F(500, 15); x.textAlign = "left";
+    x.fillText("Група", M + 10, top + rowH / 2); x.fillText("Години без світла за період", barX, top + rowH / 2);
+    x.textAlign = "right"; x.fillText("Всього", W - M - avgW - 12, top + rowH / 2); x.fillText("В середньому", W - M - 12, top + rowH / 2);
+    const max = Math.max(1, ...st.groups.map(s => s.total));
+    st.groups.forEach((s, gi) => {
+      const ry = top + rowH * (gi + 1);
+      x.textAlign = "left"; x.fillStyle = C.ink; x.font = F(600, 17); x.fillText(s.g, M + 10, ry + rowH / 2);
+      x.fillStyle = C.headBg; x.fillRect(barX, ry + 10, barW, rowH - 20);
+      x.fillStyle = C.off; x.fillRect(barX, ry + 10, Math.round(barW * s.total / max), rowH - 20);
+      x.textAlign = "right"; x.fillStyle = C.ink; x.font = F(600, 17);
+      x.fillText(s.known ? hoursLong(s.total) : "—", W - M - avgW - 12, ry + rowH / 2);
+      x.font = F(400, 16); x.fillText(s.known ? `${hoursLong(s.avg)}/день` : "—", W - M - 12, ry + rowH / 2);
+      x.fillStyle = C.rule; x.fillRect(M, ry + rowH - 1, W - 2 * M, 1);
+    });
+  }
+
+  const ly = H - 44;
+  x.textAlign = "left"; x.font = F(400, 15); let lx = M;
+  if (heatmap) {
+    [["0 год", C.on], ["до 4", C.h[0]], ["4–8", C.h[1]], ["8–12", C.h[2]], ["12+", C.h[3]], ["немає даних", C.headBg]].forEach(([t, col]) => {
+      x.fillStyle = col; x.fillRect(lx, ly - 10, 20, 20);
+      x.fillStyle = C.ink; x.fillText(t, lx + 30, ly); lx += 30 + x.measureText(t).width + 26;
+    });
+  } else {
+    x.fillStyle = C.muted; x.fillText(`Днів з графіком: ${st.daysKnown} з ${st.keys.length}`, lx, ly);
+  }
   x.textAlign = "right"; x.fillStyle = C.greenDark; x.font = F(600, 16);
   x.fillText("t.me/lvivpoweroutage", W - M, ly);
-  c.toBlob(b => {
+  cv.toBlob(b => {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(b); a.download = `bez-svitla-${y}-${pad(m + 1)}.png`;
+    const [f, t] = pFrom <= pTo ? [pFrom, pTo] : [pTo, pFrom];
+    a.href = URL.createObjectURL(b); a.download = `bez-svitla_${f}_${t}.png`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }, "image/png");
 }
 
-function render() { renderMeta(); renderDay(); renderChips(); renderCal(); renderSum(); }
+function render() { renderMeta(); renderDay(); renderChips(); renderCal(); renderPeriod(); }
 
-function shiftDay(n) { const d = dateOf(selected); d.setDate(d.getDate() + n); selected = keyOf(d); month = new Date(d.getFullYear(), d.getMonth(), 1); render(); }
+function shiftDay(n) { selected = addDays(selected, n); versionIdx = null; const d = dateOf(selected); month = new Date(d.getFullYear(), d.getMonth(), 1); render(); }
 document.getElementById("dPrev").onclick = () => shiftDay(-1);
 document.getElementById("dNext").onclick = () => shiftDay(1);
-document.getElementById("dToday").onclick = () => { const t = new Date(); selected = keyOf(t); month = new Date(t.getFullYear(), t.getMonth(), 1); render(); };
+document.getElementById("dToday").onclick = () => { selected = keyOf(new Date()); versionIdx = null; month = new Date(new Date().getFullYear(), new Date().getMonth(), 1); render(); };
 document.getElementById("mPrev").onclick = () => { month = new Date(month.getFullYear(), month.getMonth() - 1, 1); render(); };
 document.getElementById("mNext").onclick = () => { month = new Date(month.getFullYear(), month.getMonth() + 1, 1); render(); };
+document.getElementById("pFrom").onchange = e => { if (e.target.value) { pFrom = e.target.value; preset = ""; renderPeriod(); } };
+document.getElementById("pTo").onchange = e => { if (e.target.value) { pTo = e.target.value; preset = ""; renderPeriod(); } };
 document.getElementById("png").onclick = exportPNG;
 
-selected = keyOf(new Date());
 fetch("history.csv?t=" + Date.now())
   .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
   .then(t => {
@@ -486,9 +655,11 @@ fetch("history.csv?t=" + Date.now())
       const keys = Object.keys(days).sort();
       if (keys.length) { selected = keys[keys.length - 1]; const d = dateOf(selected); month = new Date(d.getFullYear(), d.getMonth(), 1); }
     }
+    applyPreset(PRESETS.some(p => p[0] === preset) ? preset : "month");
     render();
   })
   .catch(() => {
+    applyPreset("month");
     render();
     document.getElementById("dayBody").innerHTML = `<div class="empty-msg">Ще немає даних. Файл history.csv з'явиться в репозиторії після першого графіка, який збереже бот.</div>`;
   });
