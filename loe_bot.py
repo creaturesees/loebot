@@ -270,16 +270,22 @@ def send_telegram(text, image=None):
     return ok
 
 
+def quiet_hours():
+    h = now_kyiv().hour
+    return h < 9 or h >= 23
+
+
 def _send_telegram(text, image=None):
     chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
+    silent = {"disable_notification": "true"} if quiet_hours() else {}
     fits = tg_len(text) <= 1024
     file_id = None
     ok = 0
     for chat_id in chat_ids:
         msg = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
-               "disable_web_page_preview": "true"}
+               "disable_web_page_preview": "true", **silent}
         if image:
-            data = {"chat_id": chat_id}
+            data = {"chat_id": chat_id, **silent}
             if fits:
                 data.update(caption=text, parse_mode="HTML")
             if file_id:
@@ -316,7 +322,7 @@ def discord_post(payload, image=None):
 def send_discord(text, image=None, ping_text=None):
     if not DISCORD_WEBHOOK:
         return 0
-    if DISCORD_ROLE_ID:
+    if DISCORD_ROLE_ID and not quiet_hours():
         content = f"<@&{DISCORD_ROLE_ID}>" + (f" {ping_text}" if ping_text else "")
         r = discord_post({"content": content, "allowed_mentions": {"roles": [DISCORD_ROLE_ID]}})
         if not r.ok:
