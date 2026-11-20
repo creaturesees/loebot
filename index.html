@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<title>Графік відключень · Львів</title>
+<title>Графік відключень – Львів</title>
 <link rel="icon" href="assets/logo-mark.png">
 <style>
 @font-face { font-family: "Carlito"; src: url("assets/Carlito-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
@@ -194,7 +194,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
     <img src="assets/logo-mark.png" alt="Львів Електрохарчування">
     <div>
       <h1>Графік погодинних відключень</h1>
-      <div class="sub">Львів · календар і статистика</div>
+      <div class="sub">Львів – календар і статистика</div>
     </div>
     <div class="meta" id="meta"></div>
   </div>
@@ -217,7 +217,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   <section>
     <div class="bar">
       <h2 id="monthTitle">—</h2>
-      <span class="note">Скільки годин не було світла за день · ↻ — скільки разів змінювали графік</span>
+      <span class="note">Скільки годин не було світла за день – ↻ — скільки разів змінювали графік</span>
       <div class="nav">
         <button id="mPrev" aria-label="Попередній місяць">‹</button>
         <button id="mNext" aria-label="Наступний місяць">›</button>
@@ -494,7 +494,7 @@ function renderChips() {
 
 function renderCal() {
   const y = month.getFullYear(), m = month.getMonth();
-  document.getElementById("monthTitle").textContent = `${MONTHS[m]} ${y} · група ${group}`;
+  document.getElementById("monthTitle").textContent = `${MONTHS[m]} ${y} – група ${group}`;
   const cal = document.getElementById("cal");
   cal.innerHTML = DOW.map(d => `<div class="dow">${d}</div>`).join("");
   const first = (new Date(y, m, 1).getDay() + 6) % 7, n = new Date(y, m + 1, 0).getDate();
@@ -625,7 +625,7 @@ async function exportPNG() {
   if (logo) { const lh = 64, lw = logo.width * lh / logo.height; x.drawImage(logo, M, (headH - lh) / 2, lw, lh); tx = M + lw + 28; }
   x.textBaseline = "alphabetic"; x.textAlign = "left";
   x.fillStyle = "#fff"; x.font = `700 44px "Carlito", sans-serif`;
-  x.fillText("Без світла · Львів", tx, 76);
+  x.fillText("Підсумок за:", tx, 76);
   x.fillStyle = C.orange; x.font = `700 26px "Carlito", sans-serif`;
   x.fillText(periodLabel(), tx, 114);
   x.textAlign = "right"; x.fillStyle = "#dee9d6"; x.font = F(400, 15);
@@ -700,7 +700,7 @@ async function exportPNG() {
     x.fillStyle = C.ink; x.fillText("немає даних", lx + 30, ly);
   } else {
     const legendText = "колір: від найменше (зелений) до найбільше (червоний) годин без світла";
-    x.fillStyle = C.muted; x.fillText(st.keys.length === 1 ? legendText[0].toUpperCase() + legendText.slice(1) : `Днів з графіком: ${st.daysKnown} з ${st.keys.length} · ${legendText}`, lx, ly);
+    x.fillStyle = C.muted; x.fillText(st.keys.length === 1 ? legendText[0].toUpperCase() + legendText.slice(1) : `Днів з графіком: ${st.daysKnown} з ${st.keys.length} – ${legendText}`, lx, ly);
   }
   x.textAlign = "right"; x.fillStyle = C.greenDark; x.font = F(600, 16);
   x.fillText("t.me/lvivpoweroutage", W - M, ly);
