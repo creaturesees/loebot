@@ -1,0 +1,44 @@
+name: LOE emergency outages
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: loe-accidents
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install requests pillow
+
+      - name: Check emergency outages
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
+          TG_EMOJI_ID: ${{ secrets.TG_EMOJI_ID }}
+          DISCORD_EMOJI_ID: ${{ secrets.DISCORD_EMOJI_ID }}
+          ACC_CITIES: ${{ vars.ACC_CITIES }}
+        run: python loe_accidents.py
+
+      - name: Save state
+        run: |
+          git config user.name "loe-bot"
+          git config user.email "loe-bot@users.noreply.github.com"
+          if [ -f accidents.json ]; then git add accidents.json; fi
+          git diff --cached --quiet || (git commit -m "update emergency outages" && git pull --rebase && git push)
