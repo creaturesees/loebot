@@ -917,8 +917,8 @@ async function exportAcc() {
   const btn = document.getElementById("accPng"); btn.disabled = true;
   await document.fonts.ready;
   const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
-  const [logo, mark] = await Promise.all([loadImg("assets/logo-mark.png"), loadImg("assets/watermark.png")]);
-  const S = 2, W = 1280, M = 32, headH = 150, headRow = 44, lineH = 24, padY = 12;
+  const mark = await loadImg("assets/watermark.png");
+  const S = 2, W = 1280, M = 24, headRow = 44, lineH = 24, padY = 12;
   const F = (w, s) => `${w} ${s}px "Fira Sans", sans-serif`;
   const cols = { street: 280, kind: 250, from: 120, to: 150 };
   const housesW = W - 2 * M - cols.street - cols.kind - cols.from - cols.to;
@@ -934,25 +934,16 @@ async function exportAcc() {
   const cap = n === 1 ? Infinity : Math.max(ACC_PAGE_H, Math.ceil(total / n) + maxRow);
   const pages = [[]]; let used = 0;
   laid.forEach(l => { if (used + l.h > cap && pages[pages.length - 1].length) { pages.push([]); used = 0; } pages[pages.length - 1].push(l); used += l.h; });
-  const ch = accChanged(), today = dateOf(kyivToday());
-  const subLine = `Львів · ${today.getDate()} ${MONTHS_GEN[today.getMonth()]} ${today.getFullYear()}`;
+  const ch = accChanged();
   const urls = [];
   for (let pi = 0; pi < pages.length; pi++) {
     const page = pages[pi];
-    const top = headH + 32;
+    const top = M;
     const bodyH = page.reduce((a, b) => a + b.h, 0);
-    const H = top + headRow + bodyH + 84;
+    const H = top + headRow + bodyH + M;
     const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
     const x = cv.getContext("2d"); x.scale(S, S);
     x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
-    x.fillStyle = C.green; x.fillRect(0, 0, W, headH);
-    let tx = M;
-    if (logo) { const lh = 64, lw = logo.width * lh / logo.height; x.drawImage(logo, M, (headH - lh) / 2, lw, lh); tx = M + lw + 28; }
-    x.textBaseline = "alphabetic"; x.textAlign = "left";
-    x.fillStyle = "#fff"; x.font = `700 44px "Carlito", sans-serif`; x.fillText("Аварійні відключення", tx, 76);
-    x.fillStyle = C.orange; x.font = `700 26px "Carlito", sans-serif`; x.fillText(subLine, tx, 114);
-    x.textAlign = "right";
-    if (ch) { x.fillStyle = "#dee9d6"; x.font = F(400, 15); x.fillText("Список оновлено", W - M, 76); x.fillStyle = "#fff"; x.font = F(600, 26); x.fillText(ch.slice(0, 5), W - M, 112); }
 
     x.textBaseline = "middle";
     const cx = { street: M, houses: M + cols.street, kind: M + cols.street + housesW, from: W - M - cols.to - cols.from, to: W - M - cols.to };
@@ -982,10 +973,6 @@ async function exportAcc() {
     x.fillText("t.me/lvivpoweroutage", W / 2, mid + size / 2 + 6);
     x.restore();
 
-    const fy = H - 42;
-    x.textAlign = "left"; x.fillStyle = C.muted; x.font = F(400, 15);
-    x.fillText(`Час увімкнення орієнтовний · Джерело: Львівобленерго${pages.length > 1 ? ` · Частина ${pi + 1} з ${pages.length}` : ""}`, M, fy);
-    x.textAlign = "right"; x.fillStyle = C.greenDark; x.font = F(600, 16); x.fillText("t.me/lvivpoweroutage", W - M, fy);
     const blob = await new Promise(res => cv.toBlob(res, "image/png"));
     if (!blob) throw new Error("браузер не дозволив створити зображення (захист canvas)");
     urls.push(URL.createObjectURL(blob));
