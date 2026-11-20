@@ -6,10 +6,10 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>Графік відключень – Львів</title>
-<link rel="icon" href="assets/favicon.ico" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png">
-<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="icon" href="assets/favicon.ico?v=2" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=2">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/favicon-192.png?v=2">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=2">
 <style>
 @font-face { font-family: "Carlito"; src: url("assets/Carlito-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 @font-face { font-family: "Fira Sans"; src: url("assets/FiraSans-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
@@ -149,6 +149,21 @@ table.sum tr.mine td { background: var(--head-bg); font-weight: 600; }
 .kpis small { display: block; color: var(--muted); font-size: 14px; }
 .kpis b { font-weight: 600; font-size: 22px; font-variant-numeric: tabular-nums; }
 
+table.acc { width: 100%; border-collapse: collapse; }
+table.acc th { background: var(--green-dark); color: #fff; font-weight: 500; text-align: left; padding: 12px; font-size: 15px; }
+table.acc td { padding: 11px 12px; border-bottom: 1px solid var(--rule); font-size: 16px; vertical-align: top; }
+table.acc td.st { font-weight: 600; box-shadow: inset 4px 0 0 var(--k, var(--off)); padding-left: 16px; }
+table.acc td.tm { white-space: nowrap; font-variant-numeric: tabular-nums; }
+table.acc .kd { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+table.acc .kd i { width: 12px; height: 12px; display: inline-block; }
+.acc-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+.acc-tools .sep { flex: 1; }
+.shots { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+.shots figure { margin: 0; width: 260px; }
+.shots img { width: 100%; display: block; border: 1px solid var(--rule); }
+.shots figcaption { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 14px; color: var(--muted); }
+.shots a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
+
 .empty-msg { padding: 28px; background: var(--head-bg); color: var(--muted); }
 footer { max-width: 1240px; margin: 0 auto; padding: 0 32px 40px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 15px; }
 footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
@@ -185,6 +200,10 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   .day > span { font-size: 16px; font-weight: 600; }
   .day b { font-size: 12px; font-weight: 500; opacity: .8; }
   .period .sep { display: none; }
+  .acc-tools .sep { display: none; }
+  table.acc th, table.acc td { padding: 9px 6px; font-size: 14px; }
+  table.acc td.st { padding-left: 10px; }
+  .shots figure { width: calc(50% - 8px); }
   .picker { left: 0; right: auto; width: min(320px, calc(100vw - 32px)); }
   .kpis div { min-width: 50%; border-bottom: 1px solid var(--rule); }
   table.sum td, table.sum th { padding: 10px 6px; font-size: 14px; }
@@ -215,6 +234,20 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
       </div>
     </div>
     <div id="dayBody"></div>
+  </section>
+
+  <section id="accSec">
+    <div class="bar">
+      <h2>Аварійні відключення зараз</h2>
+      <span class="note" id="accNote"></span>
+    </div>
+    <div class="acc-tools">
+      <span class="seg" id="accFilter" role="group" aria-label="Які відключення показати"></span>
+      <span class="sep"></span>
+      <button class="btn primary" id="accPng">Завантажити PNG</button>
+    </div>
+    <div id="accBody"></div>
+    <div class="shots" id="accShots"></div>
   </section>
 
   <section>
@@ -256,7 +289,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
 </main>
 
 <footer>
-  <span>Дані: графіки Львівобленерго, зібрані ботом</span>
+  <span>Дані: графіки й аварійні відключення Львівобленерго, зібрані ботом</span>
   <a href="https://t.me/lvivpoweroutage">t.me/lvivpoweroutage</a>
 </footer>
 
@@ -788,6 +821,170 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") closePicker(
 bindDateInput("pFrom", k => { pFrom = k; });
 bindDateInput("pTo", k => { pTo = k; });
 document.getElementById("png").onclick = exportPNG;
+
+const KINDS = {
+  emergency: ["Аварійне", "#9e3430", true],
+  possible: ["Можливе аварійне", "#ed952c", true],
+  gav: ["Графік аварійних (ГАВ)", "#6b1f1c", true],
+  sgav: ["Спецграфік аварійних (СГАВ)", "#6b1f1c", true],
+  switching: ["Оперативні перемикання", "#6f8195", false],
+  planned: ["Планове", "#5d894a", false],
+  gpv: ["Погодинне (ГПВ)", "#426334", false],
+  other: ["Інше", "#6e756c", false]
+};
+const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?([+-]\d{2}:\d{2}|Z)$/;
+const ACC_GRACE = 30 * 60000;
+const ACC_PAGE_H = 1100;
+let acc = null;
+let accFilter = store.get("loe-accfilter", "em") === "all" ? "all" : "em";
+const kyivToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Kyiv", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const accTime = iso => {
+  if (!iso) return "—";
+  const d = iso.slice(0, 10), t = iso.slice(11, 16);
+  return d === kyivToday() ? t : `${d.slice(8, 10)}.${d.slice(5, 7)} ${t}`;
+};
+function accClean(data) {
+  const rows = Array.isArray(data && data.rows) ? data.rows : [];
+  const now = Date.now();
+  return rows.filter(r => r && typeof r.street === "string" && r.street && KINDS[r.kind]
+      && (r.from == null || ISO_RE.test(r.from)) && (r.to == null || ISO_RE.test(r.to)))
+    .map(r => ({ street: r.street.slice(0, 120), houses: (Array.isArray(r.houses) ? r.houses : []).map(String).map(h => h.slice(0, 20)).slice(0, 400),
+      from: r.from || null, to: r.to || null, kind: r.kind }))
+    .filter(r => (!r.from || Date.parse(r.from) <= now) && (!r.to || Date.parse(r.to) + ACC_GRACE > now));
+}
+function accRows() {
+  if (!acc) return [];
+  return acc.rows.filter(r => accFilter === "all" || KINDS[r.kind][2]);
+}
+function accChanged() {
+  const c = acc && typeof acc.changed === "string" && ISO_RE.test(acc.changed) ? acc.changed : null;
+  return c ? `${c.slice(11, 16)} ${c.slice(8, 10)}.${c.slice(5, 7)}.${c.slice(0, 4)}` : "";
+}
+function renderAcc() {
+  const f = document.getElementById("accFilter");
+  f.innerHTML = [["em", "Аварійні"], ["all", "Усі"]].map(([id, t]) => `<button class="chip" data-f="${id}" aria-pressed="${accFilter === id}">${t}</button>`).join("");
+  f.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { accFilter = b.dataset.f; store.set("loe-accfilter", accFilter); document.getElementById("accShots").innerHTML = ""; renderAcc(); });
+  const rows = accRows(), body = document.getElementById("accBody"), note = document.getElementById("accNote");
+  document.getElementById("accPng").disabled = !rows.length;
+  if (!acc) { note.textContent = ""; body.innerHTML = `<div class="empty-msg">Ще немає даних про аварійні відключення. Файл accidents.json з'явиться після наступної перевірки бота.</div>`; return; }
+  const ch = accChanged();
+  note.textContent = `${rows.length ? `${rows.length} ${plural(rows.length, "запис", "записи", "записів")}` : ""}${ch ? `${rows.length ? " · " : ""}список оновлено ${ch}` : ""}`;
+  if (!rows.length) { body.innerHTML = `<div class="empty-msg">Зараз ${accFilter === "em" ? "аварійних " : ""}відключень у Львові немає ✅</div>`; return; }
+  body.innerHTML = `<table class="acc">
+    <tr><th>Вулиця</th><th>Будинки</th><th class="hide-sm">Тип</th><th>Вимкнено</th><th>Орієнт. увімкнуть</th></tr>
+    ${rows.map(r => { const k = KINDS[r.kind]; return `<tr><td class="st" style="--k:${k[1]}">${esc(r.street)}</td><td>${esc(r.houses.join(", ") || "—")}</td>
+      <td class="hide-sm"><span class="kd"><i style="background:${k[1]}"></i>${esc(k[0])}</span></td><td class="tm">${esc(accTime(r.from))}</td><td class="tm">${esc(accTime(r.to))}</td></tr>`; }).join("")}
+  </table>`;
+}
+
+function wrapText(x, text, maxW, sep) {
+  const parts = sep ? text.split(sep) : text.split(" ");
+  const joiner = sep || " ";
+  const lines = []; let cur = "";
+  parts.forEach((p, i) => {
+    const piece = i < parts.length - 1 && sep ? p + sep.trimEnd() : p;
+    const test = cur ? cur + (sep ? " " : joiner) + piece : piece;
+    if (x.measureText(test).width <= maxW || !cur) cur = test;
+    else { lines.push(cur); cur = piece; }
+  });
+  if (cur) lines.push(cur);
+  return lines.length ? lines : ["—"];
+}
+
+async function exportAcc() {
+  const rows = accRows();
+  if (!rows.length) return;
+  const btn = document.getElementById("accPng"); btn.disabled = true;
+  await document.fonts.ready;
+  const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  const [logo, mark] = await Promise.all([loadImg("assets/logo-mark.png"), loadImg("assets/watermark.png")]);
+  const S = 2, W = 1280, M = 32, headH = 150, headRow = 44, lineH = 24, padY = 12;
+  const F = (w, s) => `${w} ${s}px "Fira Sans", sans-serif`;
+  const cols = { street: 280, kind: 250, from: 120, to: 150 };
+  const housesW = W - 2 * M - cols.street - cols.kind - cols.from - cols.to;
+  const mx = document.createElement("canvas").getContext("2d");
+  const laid = rows.map(r => {
+    mx.font = F(600, 17); const st = wrapText(mx, r.street, cols.street - 28);
+    mx.font = F(400, 17); const hs = wrapText(mx, r.houses.join(", ") || "—", housesW - 24, ", ");
+    mx.font = F(400, 16); const kd = wrapText(mx, KINDS[r.kind][0], cols.kind - 46);
+    return { r, st, hs, kd, h: Math.max(st.length, hs.length, kd.length) * lineH + padY * 2 };
+  });
+  const total = laid.reduce((a, b) => a + b.h, 0), maxRow = Math.max(...laid.map(l => l.h));
+  const n = Math.min(3, Math.max(1, Math.ceil(total / ACC_PAGE_H)));
+  const cap = n === 1 ? Infinity : Math.max(ACC_PAGE_H, Math.ceil(total / n) + maxRow);
+  const pages = [[]]; let used = 0;
+  laid.forEach(l => { if (used + l.h > cap && pages[pages.length - 1].length) { pages.push([]); used = 0; } pages[pages.length - 1].push(l); used += l.h; });
+  const ch = accChanged(), today = dateOf(kyivToday());
+  const subLine = `Львів · ${today.getDate()} ${MONTHS_GEN[today.getMonth()]} ${today.getFullYear()}`;
+  const urls = [];
+  for (let pi = 0; pi < pages.length; pi++) {
+    const page = pages[pi];
+    const top = headH + 32;
+    const bodyH = page.reduce((a, b) => a + b.h, 0);
+    const H = top + headRow + bodyH + 84;
+    const cv = document.createElement("canvas"); cv.width = W * S; cv.height = H * S;
+    const x = cv.getContext("2d"); x.scale(S, S);
+    x.fillStyle = "#fff"; x.fillRect(0, 0, W, H);
+    x.fillStyle = C.green; x.fillRect(0, 0, W, headH);
+    let tx = M;
+    if (logo) { const lh = 64, lw = logo.width * lh / logo.height; x.drawImage(logo, M, (headH - lh) / 2, lw, lh); tx = M + lw + 28; }
+    x.textBaseline = "alphabetic"; x.textAlign = "left";
+    x.fillStyle = "#fff"; x.font = `700 44px "Carlito", sans-serif`; x.fillText("Аварійні відключення", tx, 76);
+    x.fillStyle = C.orange; x.font = `700 26px "Carlito", sans-serif`; x.fillText(subLine, tx, 114);
+    x.textAlign = "right";
+    if (ch) { x.fillStyle = "#dee9d6"; x.font = F(400, 15); x.fillText("Список оновлено", W - M, 76); x.fillStyle = "#fff"; x.font = F(600, 26); x.fillText(ch.slice(0, 5), W - M, 112); }
+
+    x.textBaseline = "middle";
+    const cx = { street: M, houses: M + cols.street, kind: M + cols.street + housesW, from: W - M - cols.to - cols.from, to: W - M - cols.to };
+    x.fillStyle = C.greenDark; x.fillRect(M, top, W - 2 * M, headRow);
+    x.fillStyle = "#fff"; x.font = F(500, 15); x.textAlign = "left";
+    [["Вулиця", cx.street + 16], ["Будинки", cx.houses + 12], ["Тип", cx.kind + 12], ["Вимкнено", cx.from + 12], ["Орієнт. увімкнуть", cx.to + 12]].forEach(([t, px]) => x.fillText(t, px, top + headRow / 2));
+    let y = top + headRow;
+    page.forEach(l => {
+      const k = KINDS[l.r.kind];
+      x.fillStyle = k[1]; x.fillRect(M, y, 4, l.h - 1);
+      const ly = i => y + padY + lineH * i + lineH / 2;
+      x.textAlign = "left"; x.fillStyle = C.ink;
+      x.font = F(600, 17); l.st.forEach((t, i) => x.fillText(t, cx.street + 16, ly(i)));
+      x.font = F(400, 17); l.hs.forEach((t, i) => x.fillText(t, cx.houses + 12, ly(i)));
+      x.fillStyle = k[1]; x.fillRect(cx.kind + 12, ly(0) - 6, 12, 12);
+      x.fillStyle = C.ink; x.font = F(400, 16); l.kd.forEach((t, i) => x.fillText(t, cx.kind + 34, ly(i)));
+      x.font = F(500, 17); x.fillText(accTime(l.r.from), cx.from + 12, ly(0)); x.fillText(accTime(l.r.to), cx.to + 12, ly(0));
+      y += l.h;
+      x.fillStyle = C.rule; x.fillRect(M, y - 1, W - 2 * M, 1);
+    });
+
+    const areaTop = top + headRow, areaH = Math.max(bodyH, 200), mid = areaTop + Math.min(bodyH, areaH) / 2;
+    const size = Math.min(380, Math.max(160, bodyH * 0.7));
+    x.save();
+    if (mark) { x.globalAlpha = 0.11; x.drawImage(mark, W / 2 - size / 2, mid - size / 2 - 20, size, size); }
+    x.globalAlpha = 0.13; x.fillStyle = C.greenDark; x.textAlign = "center"; x.font = `700 ${Math.round(size * 0.15)}px "Carlito", sans-serif`;
+    x.fillText("t.me/lvivpoweroutage", W / 2, mid + size / 2 + 6);
+    x.restore();
+
+    const fy = H - 42;
+    x.textAlign = "left"; x.fillStyle = C.muted; x.font = F(400, 15);
+    x.fillText(`Час увімкнення орієнтовний · Джерело: Львівобленерго${pages.length > 1 ? ` · Частина ${pi + 1} з ${pages.length}` : ""}`, M, fy);
+    x.textAlign = "right"; x.fillStyle = C.greenDark; x.font = F(600, 16); x.fillText("t.me/lvivpoweroutage", W - M, fy);
+    const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+    urls.push(URL.createObjectURL(blob));
+  }
+  const stamp = `${kyivToday()}_${(ch || "").slice(0, 5).replace(":", "-")}`;
+  const name = i => `avariini_${stamp}${urls.length > 1 ? `_${i + 1}` : ""}.png`;
+  const box = document.getElementById("accShots");
+  box.querySelectorAll("img").forEach(i => URL.revokeObjectURL(i.src));
+  box.innerHTML = urls.map((u, i) => `<figure><img src="${u}" alt="Аварійні відключення, зображення ${i + 1}"><figcaption><span>${urls.length > 1 ? `${i + 1} з ${urls.length}` : "PNG"}</span><a href="${u}" download="${name(i)}">Завантажити</a></figcaption></figure>`).join("")
+    + (urls.length > 1 ? `<div style="align-self:center"><button class="btn" id="accAll">Завантажити всі ${urls.length}</button></div>` : "");
+  const all = document.getElementById("accAll");
+  if (all) all.onclick = () => box.querySelectorAll("a[download]").forEach((a, i) => setTimeout(() => a.click(), i * 400));
+  else box.querySelector("a[download]").click();
+  btn.disabled = false;
+}
+document.getElementById("accPng").onclick = exportAcc;
+fetch("accidents.json?t=" + Date.now())
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { acc = { changed: d && d.changed, rows: accClean(d) }; renderAcc(); })
+  .catch(() => renderAcc());
 
 fetch("history.csv?t=" + Date.now())
   .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })

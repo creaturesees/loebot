@@ -69,7 +69,8 @@ def parse_schedule(raw_html):
 
 
 def fetch_schedules():
-    r = requests.get(API_URL, headers=HEADERS, timeout=60)
+    r = requests.get(API_URL, params={"_": int(datetime.now(timezone.utc).timestamp())},
+                     headers=HEADERS, timeout=60)
     r.raise_for_status()
     data = r.json()
 
