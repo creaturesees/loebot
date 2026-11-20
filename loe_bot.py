@@ -206,12 +206,9 @@ def format_post(s, f=TelegramFmt, changes=None):
     lines.append("\n\n".join(blocks))
     lines.append("")
 
-    if changes is not None:
+    if changes:
         lines.append(f.bold("🔄 Що змінилося:"))
-        if changes:
-            lines += [f.esc(c) for c in changes]
-        else:
-            lines.append(f.esc("Години відключень не змінились"))
+        lines += [f.esc(c) for c in changes]
         lines.append("")
 
     lines += [
@@ -286,24 +283,34 @@ def send_telegram(text, image=None):
     return ok
 
 
-def send_discord(text, image=None):
+def discord_post(payload, image=None):
+    if image:
+        return requests.post(DISCORD_WEBHOOK, data={"payload_json": json.dumps(payload)},
+                             files={"files[0]": ("schedule.png", image, "image/png")}, timeout=60)
+    return requests.post(DISCORD_WEBHOOK, json=payload, timeout=30)
+
+
+def send_discord(text, image=None, ping_text=None):
     if not DISCORD_WEBHOOK:
         return 0
-    content = text
-    allowed = {"parse": []}
     if DISCORD_ROLE_ID:
-        content = f"<@&{DISCORD_ROLE_ID}>\n{text}"
-        allowed = {"roles": [DISCORD_ROLE_ID]}
-    payload = {"content": content[:2000], "allowed_mentions": allowed, "flags": 4}
-    if image:
-        r = requests.post(DISCORD_WEBHOOK, data={"payload_json": json.dumps(payload)},
-                          files={"files[0]": ("schedule.png", image, "image/png")}, timeout=60)
-    else:
-        r = requests.post(DISCORD_WEBHOOK, json=payload, timeout=30)
+        content = f"<@&{DISCORD_ROLE_ID}>" + (f" {ping_text}" if ping_text else "")
+        r = discord_post({"content": content, "allowed_mentions": {"roles": [DISCORD_ROLE_ID]}})
+        if not r.ok:
+            print(f"Discord: пінг не надіслано {r.status_code} {r.text[:200]}")
+    r = discord_post({"content": text[:2000], "allowed_mentions": {"parse": []}, "flags": 4}, image)
     if r.ok:
         return 1
     print(f"Discord: помилка {r.status_code} {r.text[:200]}")
     return 0
+
+
+def ping_text(s, changes):
+    if s["kind"] != "schedule":
+        return "оновлення від Львівобленерго"
+    d = datetime.strptime(s["date"], "%d.%m.%Y")
+    what = "оновлено графік" if changes is not None else "новий графік"
+    return f"{what} на {d.day} {MONTHS[d.month - 1]}"
 
 
 def send(s, changes=None, old_groups=None):
@@ -311,7 +318,7 @@ def send(s, changes=None, old_groups=None):
     ok = 0
     if BOT_TOKEN and CHAT_ID:
         ok += send_telegram(format_post(s, TelegramFmt, changes), image)
-    ok += send_discord(format_post(s, DiscordFmt, changes), image)
+    ok += send_discord(format_post(s, DiscordFmt, changes), image, ping_text(s, changes))
     if ok == 0:
         raise RuntimeError("Не вдалося надіслати нікуди (ні Telegram, ні Discord)")
 
