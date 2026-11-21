@@ -188,10 +188,7 @@ def post_channel(rows, now):
         last = open(POSTED_FILE).read().strip()
     except OSError:
         last = ""
-    if digest == "empty" and last == "empty":
-        print("Канал: аварійних немає, вже повідомлено")
-        return
-    if os.environ.get("ACC_ONLY_CHANGES") == "1" and digest == last:
+    if digest == last:
         print("Канал: без змін")
         return
     if rows:
