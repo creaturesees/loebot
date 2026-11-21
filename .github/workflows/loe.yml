@@ -33,6 +33,7 @@ jobs:
           HC_URL: ${{ secrets.HC_URL }}
           TG_EMOJI_ID: ${{ secrets.TG_EMOJI_ID }}
           DISCORD_EMOJI_ID: ${{ secrets.DISCORD_EMOJI_ID }}
+          TG_EMOJI_SOS_ID: ${{ secrets.TG_EMOJI_SOS_ID }}
         run: python loe_bot.py
 
       - name: Save state
