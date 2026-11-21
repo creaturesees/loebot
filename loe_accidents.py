@@ -48,6 +48,8 @@ def fetch_rows():
             break
         page += 1
         time.sleep(0.5)
+    cities = {(m.get("city") or {}).get("name") for m in rows}
+    print(f"Аварійні: сторінок {page}, записів {len(rows)}, населених пунктів {len(cities)}")
     return rows
 
 
