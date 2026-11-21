@@ -107,6 +107,79 @@ def load_old():
         return {}
 
 
+NOTIFY_KINDS = {"emergency", "possible", "gav", "sgav"}
+CHANNEL = os.environ.get("SOSCHANNEL_ID", "").strip()
+CHANNEL_CITIES = {c.strip() for c in os.environ.get("ACC_CHANNEL_CITIES", "").split(",") if c.strip()}
+POSTED_FILE = "acc_posted.txt"
+
+
+def channel_caption(now, f, empty):
+    import loe_bot as bot
+    lines = [f.bold("⚠️ Аварійні відключення"),
+             f.italic(f"станом на {now.astimezone(KYIV).strftime('%H:%M %d.%m.%Y')}")]
+    if empty:
+        lines += ["", f.esc("Зараз аварійних відключень немає ✅")]
+    lines += ["", *bot.footer(f)]
+    return "\n".join(lines)
+
+
+def send_album(images, caption):
+    import loe_bot as bot
+    silent = {"disable_notification": "true"} if bot.quiet_hours() else {}
+    for start in range(0, len(images), 10):
+        chunk = images[start:start + 10]
+        cap = caption if start == 0 else ""
+        if len(chunk) == 1:
+            data = {"chat_id": CHANNEL, **silent}
+            if cap:
+                data.update(caption=cap, parse_mode="HTML")
+            r = bot.tg_call("sendPhoto", data, {"photo": ("avariini.png", chunk[0], "image/png")})
+        else:
+            media = [{"type": "photo", "media": f"attach://p{i}"} for i in range(len(chunk))]
+            if cap:
+                media[0].update(caption=cap, parse_mode="HTML")
+            files = {f"p{i}": (f"avariini_{start + i + 1}.png", b, "image/png") for i, b in enumerate(chunk)}
+            r = bot.tg_call("sendMediaGroup", {"chat_id": CHANNEL, "media": json.dumps(media), **silent}, files)
+        if not r.ok:
+            raise RuntimeError(f"{r.status_code} {r.text[:200]}")
+
+
+def post_channel(rows, now):
+    import hashlib
+    import loe_bot as bot
+    from loe_image import render_accidents
+    if not CHANNEL or not bot.BOT_TOKEN:
+        return
+    rows = [r for r in rows if r["kind"] in NOTIFY_KINDS and (not CHANNEL_CITIES or r["city"] in CHANNEL_CITIES)]
+    digest = hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest() if rows else "empty"
+    try:
+        last = open(POSTED_FILE).read().strip()
+    except OSError:
+        last = ""
+    if digest == "empty" and last == "empty":
+        print("Канал: аварійних немає, вже повідомлено")
+        return
+    if os.environ.get("ACC_ONLY_CHANGES") == "1" and digest == last:
+        print("Канал: без змін")
+        return
+    if rows:
+        images = render_accidents(rows, datetime.now(KYIV).strftime("%Y-%m-%d"))
+        caption = channel_caption(now, bot.TelegramFmt, False)
+        try:
+            send_album(images, caption)
+        except RuntimeError:
+            send_album(images, bot.plain_emoji(caption))
+    else:
+        text = channel_caption(now, bot.TelegramFmt, True)
+        data = {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": "true"}
+        if not bot.tg_call("sendMessage", data).ok:
+            data["text"] = bot.plain_emoji(text)
+            bot.tg_call("sendMessage", data)
+    with open(POSTED_FILE, "w") as f:
+        f.write(digest)
+    print(f"Канал: надіслано ({len(rows)} записів)")
+
+
 def main():
     now = datetime.now(timezone.utc)
     try:
@@ -114,6 +187,10 @@ def main():
     except Exception as e:
         print(f"Аварійні: не вдалося отримати дані: {e}")
         return
+    try:
+        post_channel(rows, now)
+    except Exception as e:
+        print(f"Канал: не вдалося надіслати: {e}")
     old = load_old()
     if old.get("rows") == rows:
         print(f"Аварійні: без змін ({len(rows)})")
