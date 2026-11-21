@@ -23,17 +23,9 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests pillow
+      - run: pip install requests
 
       - name: Check emergency outages
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          DISCORD_ROLE_ID: ${{ secrets.DISCORD_ROLE_ID }}
-          TG_EMOJI_ID: ${{ secrets.TG_EMOJI_ID }}
-          DISCORD_EMOJI_ID: ${{ secrets.DISCORD_EMOJI_ID }}
-          ACC_CITIES: ${{ vars.ACC_CITIES }}
         run: python loe_accidents.py
 
       - name: Save state
