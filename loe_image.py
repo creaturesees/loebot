@@ -1,3 +1,4 @@
+import io
 import os
 from datetime import datetime
 
@@ -177,3 +178,135 @@ def render_schedule(s, old_groups=None, path="schedule.png"):
 
     c.img.save(path, optimize=True)
     return path
+
+
+ACC_KINDS = {
+    "emergency": ("Аварійне", (158, 52, 48)),
+    "possible": ("Можливе аварійне", (237, 149, 44)),
+    "gav": ("Графік аварійних (ГАВ)", (107, 31, 28)),
+    "sgav": ("Спецграфік аварійних (СГАВ)", (107, 31, 28)),
+    "switching": ("Оперативні перемикання", (111, 129, 149)),
+    "planned": ("Планове", GREEN),
+    "gpv": ("Погодинне (ГПВ)", GREEN_DARK),
+    "other": ("Інше", MUTED),
+}
+ACC_PAGE_H = 1100
+ACC_PAGE_MAX = 1600
+
+
+def acc_time(iso, today):
+    if not iso:
+        return "—"
+    return iso[11:16] if iso[:10] == today else f"{iso[8:10]}.{iso[5:7]} {iso[11:16]}"
+
+
+def wrap(c, text, f, max_w, sep=None):
+    parts = text.split(sep) if sep else text.split(" ")
+    lines, cur = [], ""
+    for i, p in enumerate(parts):
+        piece = p + sep.rstrip() if sep and i < len(parts) - 1 else p
+        test = f"{cur} {piece}" if cur else piece
+        if not cur or c.width(test, f) <= max_w:
+            cur = test
+        else:
+            lines.append(cur)
+            cur = piece
+    if cur:
+        lines.append(cur)
+    return lines or ["—"]
+
+
+def render_accidents(rows, today):
+    W, M, head_row, line_h, pad = 1440, 24, 44, 24, 12
+    cols = {"city": 210, "street": 250, "kind": 240, "from": 115, "to": 150}
+    houses_w = W - 2 * M - sum(cols.values())
+    f_city, f_street, f_houses, f_kind, f_time, f_head = REG(17), SEMI(17), REG(17), REG(16), MED(17), MED(15)
+    probe = Canvas(10, 10, WHITE)
+    laid = []
+    for r in rows:
+        ct = wrap(probe, r["city"] or "—", f_city, cols["city"] - 28)
+        st = wrap(probe, r["street"] or "—", f_street, cols["street"] - 24)
+        hs = wrap(probe, ", ".join(r["houses"]) or "—", f_houses, houses_w - 24, ", ")
+        kd = wrap(probe, ACC_KINDS.get(r["kind"], ACC_KINDS["other"])[0], f_kind, cols["kind"] - 46)
+        laid.append((r, ct, st, hs, kd, max(len(ct), len(st), len(hs), len(kd)) * line_h + pad * 2))
+    total = sum(l[-1] for l in laid)
+    max_row = max(l[-1] for l in laid)
+    n = min(3, max(1, -(-total // ACC_PAGE_H)))
+    if total / n > ACC_PAGE_MAX:
+        n = -(-total // ACC_PAGE_MAX)
+    cap = float("inf") if n == 1 else max(ACC_PAGE_H, -(-total // n) + max_row)
+    pages, used = [[]], 0
+    for l in laid:
+        if used + l[-1] > cap and pages[-1]:
+            pages.append([])
+            used = 0
+        pages[-1].append(l)
+        used += l[-1]
+
+    try:
+        mark = Image.open(os.path.join(ASSETS, "watermark.png")).convert("RGBA")
+    except OSError:
+        mark = None
+    out = []
+    for page in pages:
+        body_h = sum(l[-1] for l in page)
+        top = M
+        H = top + head_row + body_h + M
+        c = Canvas(W, H, WHITE)
+        cx = {"city": M, "street": M + cols["city"], "houses": M + cols["city"] + cols["street"]}
+        cx["kind"] = cx["houses"] + houses_w
+        cx["from"] = W - M - cols["to"] - cols["from"]
+        cx["to"] = W - M - cols["to"]
+        c.rect(M, top, W - 2 * M, head_row, GREEN_DARK)
+        for t, x in [("Населений пункт", cx["city"] + 16), ("Вулиця", cx["street"] + 12),
+                     ("Будинки", cx["houses"] + 12), ("Тип", cx["kind"] + 12),
+                     ("Вимкнено", cx["from"] + 12), ("Орієнт. увімкнуть", cx["to"] + 12)]:
+            c.text(x, top + head_row // 2, t, f_head, WHITE, "lm")
+        y = top + head_row
+        for r, ct, st, hs, kd, h in page:
+            colr = ACC_KINDS.get(r["kind"], ACC_KINDS["other"])[1]
+            c.rect(M, y, 4, h - 1, colr)
+            ly = lambda i: y + pad + line_h * i + line_h // 2
+            for i, t in enumerate(ct):
+                c.text(cx["city"] + 16, ly(i), t, f_city, INK, "lm")
+            for i, t in enumerate(st):
+                c.text(cx["street"] + 12, ly(i), t, f_street, INK, "lm")
+            for i, t in enumerate(hs):
+                c.text(cx["houses"] + 12, ly(i), t, f_houses, INK, "lm")
+            c.rect(cx["kind"] + 12, ly(0) - 6, 12, 12, colr)
+            for i, t in enumerate(kd):
+                c.text(cx["kind"] + 34, ly(i), t, f_kind, INK, "lm")
+            c.text(cx["from"] + 12, ly(0), acc_time(r["from"], today), f_time, INK, "lm")
+            c.text(cx["to"] + 12, ly(0), acc_time(r["to"], today), f_time, INK, "lm")
+            y += h
+            c.rect(M, y - 1, W - 2 * M, 1, RULE)
+
+        area_top = top + head_row
+        wm_rows = max(1, round(body_h / 620))
+        wm_cols = 2 if W / body_h > 3.2 else 1
+        size = round(min(340, max(140, min(body_h / wm_rows, W / wm_cols) * 0.6)))
+        spots = []
+        for i in range(wm_rows):
+            cy = area_top + body_h * (i + 0.5) / wm_rows
+            if wm_cols == 2:
+                spots += [(W * 0.27, cy), (W * 0.73, cy)]
+            else:
+                spots.append((W * (0.68 if i % 2 else 0.32) if wm_rows > 1 else W / 2, cy))
+        layer = Image.new("RGBA", c.img.size, (0, 0, 0, 0))
+        ld = ImageDraw.Draw(layer)
+        m = None
+        if mark:
+            m = mark.resize((size * S, size * S), Image.LANCZOS)
+            m.putalpha(m.getchannel("A").point(lambda a: round(a * 0.11)))
+        wf = TITLE(round(size * 0.15))
+        for wx, wy in spots:
+            block_top = wy - size * 1.18 / 2
+            if m:
+                layer.alpha_composite(m, (round((wx - size / 2) * S), round(block_top * S)))
+            ld.text((wx * S, (block_top + size * 1.1) * S), "t.me/lvivpoweroutage", font=wf,
+                    fill=GREEN_DARK + (round(255 * 0.13),), anchor="ms")
+        img = Image.alpha_composite(c.img.convert("RGBA"), layer).convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, "PNG", optimize=True)
+        out.append(buf.getvalue())
+    return out
