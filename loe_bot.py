@@ -241,11 +241,6 @@ def format_post(s, f=TelegramFmt, changes=None):
     lines.append("\n\n".join(blocks))
     lines.append("")
 
-    if changes:
-        lines.append(f.bold("🔄 Що змінилося:"))
-        lines += [f.esc(c) for c in changes]
-        lines.append("")
-
     lines += [
         f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
         f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
