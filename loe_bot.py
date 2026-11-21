@@ -15,6 +15,10 @@ DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK", "").strip()
 DISCORD_ROLE_ID = os.environ.get("DISCORD_ROLE_ID", "").strip()
 TG_EMOJI_ID = os.environ.get("TG_EMOJI_ID", "").strip()
 DISCORD_EMOJI_ID = os.environ.get("DISCORD_EMOJI_ID", "").strip()
+TG_EMOJI_SOS_ID = os.environ.get("TG_EMOJI_SOS_ID", "").strip()
+DISCORD_EMOJI_SOS_ID = os.environ.get("DISCORD_EMOJI_SOS_ID", "").strip()
+CHANNEL_MAIN = "lvivpoweroutage"
+CHANNEL_SOS = "lvivsosoutage"
 STATE_FILE = "last_hash.txt"
 PREV_FILE = "last_schedules.json"
 HISTORY_FILE = "history.csv"
@@ -168,10 +172,14 @@ class TelegramFmt:
     def link(cls, t, url):
         return f'<a href="{html.escape(url)}">{cls.esc(t)}</a>' if url else cls.esc(t)
     @staticmethod
-    def logo(fallback):
-        if TG_EMOJI_ID.isdigit():
-            return f'<tg-emoji emoji-id="{TG_EMOJI_ID}">⚡️</tg-emoji>'
+    def logo(fallback="⚡️", emoji_id=None, alt=None):
+        emoji_id = TG_EMOJI_ID if emoji_id is None else emoji_id
+        if emoji_id.isdigit():
+            return f'<tg-emoji emoji-id="{emoji_id}">{alt or fallback}</tg-emoji>'
         return fallback
+    @staticmethod
+    def channel(name):
+        return f"@{name}"
 
 
 class DiscordFmt:
@@ -187,8 +195,18 @@ class DiscordFmt:
     def link(cls, t, url):
         return f"[{cls.esc(t)}](<{url}>)" if url else cls.esc(t)
     @staticmethod
-    def logo(fallback):
-        return f"<:loebot:{DISCORD_EMOJI_ID}>" if DISCORD_EMOJI_ID.isdigit() else fallback
+    def logo(fallback="⚡️", emoji_id=None, alt=None):
+        emoji_id = DISCORD_EMOJI_ID if emoji_id is None else emoji_id
+        return f"<:e:{emoji_id}>" if emoji_id.isdigit() else fallback
+    @staticmethod
+    def channel(name):
+        return f"[@{name}](<https://t.me/{name}>)"
+
+
+def footer(f):
+    sos_id = TG_EMOJI_SOS_ID if f is TelegramFmt else DISCORD_EMOJI_SOS_ID
+    return [f"{f.logo('⚡️', sos_id, '🆘')} {f.channel(CHANNEL_SOS)}",
+            f"{f.logo('⚡️')} {f.channel(CHANNEL_MAIN)}"]
 
 
 def format_post(s, f=TelegramFmt, changes=None):
@@ -226,7 +244,7 @@ def format_post(s, f=TelegramFmt, changes=None):
         f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
         f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
-        f'{f.logo("🔗")} {f.link("Підписатись", LINK_SUBSCRIBE)}  | {f.link("💬 Чат", LINK_CHAT)}',
+        *footer(f),
     ]
     return "\n".join(lines)
 
