@@ -203,6 +203,12 @@ class DiscordFmt:
         return f"[@{name}](<https://t.me/{name}>)"
 
 
+def schedule_footer(f):
+    sos_id = TG_EMOJI_SOS_ID if f is TelegramFmt else DISCORD_EMOJI_SOS_ID
+    return [f'{f.logo("⚡️")} {f.link("Підписатись", LINK_SUBSCRIBE)}  | {f.link("💬 Чат", LINK_CHAT)}',
+            f'{f.logo("🆘", sos_id, "🆘")} {f.link("Аварійні відключення", f"https://t.me/{CHANNEL_SOS}")}']
+
+
 def footer(f):
     sos_id = TG_EMOJI_SOS_ID if f is TelegramFmt else DISCORD_EMOJI_SOS_ID
     return [f"{f.logo('⚡️', sos_id, '🆘')} {f.channel(CHANNEL_SOS)}",
@@ -244,7 +250,7 @@ def format_post(s, f=TelegramFmt, changes=None):
         f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
         f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
-        *footer(f),
+        *schedule_footer(f),
     ]
     return "\n".join(lines)
 
