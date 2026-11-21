@@ -32,7 +32,6 @@ jobs:
           TG_EMOJI_ID: ${{ secrets.TG_EMOJI_ID }}
           TG_EMOJI_SOS_ID: ${{ secrets.TG_EMOJI_SOS_ID }}
           ACC_CHANNEL_CITIES: ${{ vars.ACC_CHANNEL_CITIES }}
-          ACC_ONLY_CHANGES: ${{ vars.ACC_ONLY_CHANGES }}
         run: python loe_accidents.py
 
       - name: Save state
