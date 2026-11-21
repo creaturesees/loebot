@@ -94,6 +94,7 @@ def current(rows, now):
             "from": start.astimezone(KYIV).isoformat() if start else None,
             "to": end.astimezone(KYIV).isoformat() if end else None,
             "kind": kind_of(row),
+            "comment": " ".join((row.get("koment") or "").split())[:200],
         })
     out.sort(key=lambda r: (r["city"] != "Львів", r["city"].lower(), r["street"].lower(), r["from"] or ""))
     return out

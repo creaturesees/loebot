@@ -221,14 +221,16 @@ def render_accidents(rows, today):
     cols = {"city": 210, "street": 250, "kind": 240, "from": 115, "to": 150}
     houses_w = W - 2 * M - sum(cols.values())
     f_city, f_street, f_houses, f_kind, f_time, f_head = REG(17), SEMI(17), REG(17), REG(16), MED(17), MED(15)
+    f_comment = REG(15)
     probe = Canvas(10, 10, WHITE)
     laid = []
     for r in rows:
         ct = wrap(probe, r["city"] or "—", f_city, cols["city"] - 28)
         st = wrap(probe, r["street"] or "—", f_street, cols["street"] - 24)
         hs = wrap(probe, ", ".join(r["houses"]) or "—", f_houses, houses_w - 24, ", ")
+        cm = wrap(probe, r["comment"], f_comment, houses_w - 24) if r.get("comment") else []
         kd = wrap(probe, ACC_KINDS.get(r["kind"], ACC_KINDS["other"])[0], f_kind, cols["kind"] - 46)
-        laid.append((r, ct, st, hs, kd, max(len(ct), len(st), len(hs), len(kd)) * line_h + pad * 2))
+        laid.append((r, ct, st, hs, cm, kd, max(len(ct), len(st), len(hs) + len(cm), len(kd)) * line_h + pad * 2))
     total = sum(l[-1] for l in laid)
     max_row = max(l[-1] for l in laid)
     n = min(3, max(1, -(-total // ACC_PAGE_H)))
@@ -243,10 +245,15 @@ def render_accidents(rows, today):
         pages[-1].append(l)
         used += l[-1]
 
-    try:
-        mark = Image.open(os.path.join(ASSETS, "watermark.png")).convert("RGBA")
-    except OSError:
-        mark = None
+    mark = None
+    for name in ("watermark.png", "loebot.png", "favicon-192.png"):
+        try:
+            mark = Image.open(os.path.join(ASSETS, name)).convert("RGBA")
+            break
+        except OSError:
+            continue
+    if mark is None:
+        print("Увага: немає assets/watermark.png, водяний знак буде без блискавки")
     out = []
     for page in pages:
         body_h = sum(l[-1] for l in page)
@@ -263,7 +270,7 @@ def render_accidents(rows, today):
                      ("Вимкнено", cx["from"] + 12), ("Орієнт. увімкнуть", cx["to"] + 12)]:
             c.text(x, top + head_row // 2, t, f_head, WHITE, "lm")
         y = top + head_row
-        for r, ct, st, hs, kd, h in page:
+        for r, ct, st, hs, cm, kd, h in page:
             colr = ACC_KINDS.get(r["kind"], ACC_KINDS["other"])[1]
             c.rect(M, y, 4, h - 1, colr)
             ly = lambda i: y + pad + line_h * i + line_h // 2
@@ -273,6 +280,8 @@ def render_accidents(rows, today):
                 c.text(cx["street"] + 12, ly(i), t, f_street, INK, "lm")
             for i, t in enumerate(hs):
                 c.text(cx["houses"] + 12, ly(i), t, f_houses, INK, "lm")
+            for i, t in enumerate(cm):
+                c.text(cx["houses"] + 12, ly(len(hs) + i), t, f_comment, MUTED, "lm")
             c.rect(cx["kind"] + 12, ly(0) - 6, 12, 12, colr)
             for i, t in enumerate(kd):
                 c.text(cx["kind"] + 34, ly(i), t, f_kind, INK, "lm")

@@ -163,6 +163,7 @@ table.acc th { color: var(--muted); font-weight: 500; text-align: left; padding:
 table.acc td { padding: 11px 12px; border-bottom: 1px solid var(--rule); font-size: 16px; vertical-align: top; }
 table.acc td.sn { font-weight: 600; }
 table.acc .cty { display: none; }
+table.acc .cm { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; }
 table.acc td.st { box-shadow: inset 4px 0 0 var(--k, var(--off)); padding-left: 16px; }
 table.acc td.tm { white-space: nowrap; font-variant-numeric: tabular-nums; }
 table.acc .kd { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -878,6 +879,7 @@ function accClean(data) {
   return rows.filter(r => r && typeof r.street === "string" && (r.street || r.city) && KINDS[r.kind]
       && (r.from == null || ISO_RE.test(r.from)) && (r.to == null || ISO_RE.test(r.to)))
     .map(r => ({ city: typeof r.city === "string" && r.city ? r.city.slice(0, 80) : "—", otg: typeof r.otg === "string" ? r.otg.slice(0, 80) : "", street: r.street.slice(0, 120) || "—", houses: (Array.isArray(r.houses) ? r.houses : []).map(String).map(h => h.slice(0, 20)).slice(0, 400),
+      comment: typeof r.comment === "string" ? r.comment.slice(0, 200) : "",
       from: r.from || null, to: r.to || null, kind: r.kind }))
     .filter(r => (!r.from || Date.parse(r.from) <= now) && (!r.to || Date.parse(r.to) + ACC_GRACE > now));
 }
@@ -907,7 +909,7 @@ function renderAcc() {
   if (!rows.length) { body.innerHTML = `<div class="empty-msg">Зараз ${accFilter === "em" ? "аварійних " : ""}відключень${accCity ? ` (${esc(accCity)})` : ""} немає ✅</div>`; return; }
   body.innerHTML = `<table class="acc">
     <tr><th class="hide-sm">Населений пункт</th><th>Вулиця</th><th>Будинки</th><th class="hide-sm">Тип</th><th>Вимкнено</th><th>Орієнт. увімкнуть</th></tr>
-    ${rows.map(r => { const k = KINDS[r.kind]; return `<tr><td class="st hide-sm" style="--k:${k[1]}"${r.otg ? ` title="${esc(r.otg)} громада"` : ""}>${esc(r.city)}</td><td class="sn" style="--k:${k[1]}">${esc(r.street)}<small class="cty">${esc(r.city)}</small></td><td>${esc(r.houses.join(", ") || "—")}</td>
+    ${rows.map(r => { const k = KINDS[r.kind]; return `<tr><td class="st hide-sm" style="--k:${k[1]}"${r.otg ? ` title="${esc(r.otg)} громада"` : ""}>${esc(r.city)}</td><td class="sn" style="--k:${k[1]}">${esc(r.street)}<small class="cty">${esc(r.city)}</small></td><td>${esc(r.houses.join(", ") || "—")}${r.comment ? `<small class="cm">${esc(r.comment)}</small>` : ""}</td>
       <td class="hide-sm"><span class="kd"><i style="background:${k[1]}"></i>${esc(k[0])}</span></td><td class="tm">${esc(accTime(r.from))}</td><td class="tm">${esc(accTime(r.to))}</td></tr>`; }).join("")}
   </table>`;
 }
@@ -942,8 +944,9 @@ async function exportAcc() {
     mx.font = F(400, 17); const ct = wrapText(mx, r.city, cols.city - 28);
     mx.font = F(600, 17); const st = wrapText(mx, r.street, cols.street - 24);
     mx.font = F(400, 17); const hs = wrapText(mx, r.houses.join(", ") || "—", housesW - 24, ", ");
+    mx.font = F(400, 15); const cm = r.comment ? wrapText(mx, r.comment, housesW - 24) : [];
     mx.font = F(400, 16); const kd = wrapText(mx, KINDS[r.kind][0], cols.kind - 46);
-    return { r, ct, st, hs, kd, h: Math.max(ct.length, st.length, hs.length, kd.length) * lineH + padY * 2 };
+    return { r, ct, st, hs, cm, kd, h: Math.max(ct.length, st.length, hs.length + cm.length, kd.length) * lineH + padY * 2 };
   });
   const total = laid.reduce((a, b) => a + b.h, 0), maxRow = Math.max(...laid.map(l => l.h));
   let n = Math.min(3, Math.max(1, Math.ceil(total / ACC_PAGE_H)));
@@ -976,6 +979,8 @@ async function exportAcc() {
       x.font = F(400, 17); l.ct.forEach((t, i) => x.fillText(t, cx.city + 16, ly(i)));
       x.font = F(600, 17); l.st.forEach((t, i) => x.fillText(t, cx.street + 12, ly(i)));
       x.font = F(400, 17); l.hs.forEach((t, i) => x.fillText(t, cx.houses + 12, ly(i)));
+      x.fillStyle = C.muted; x.font = F(400, 15); l.cm.forEach((t, i) => x.fillText(t, cx.houses + 12, ly(l.hs.length + i)));
+      x.fillStyle = C.ink;
       x.fillStyle = k[1]; x.fillRect(cx.kind + 12, ly(0) - 6, 12, 12);
       x.fillStyle = C.ink; x.font = F(400, 16); l.kd.forEach((t, i) => x.fillText(t, cx.kind + 34, ly(i)));
       x.font = F(500, 17); x.fillText(accTime(l.r.from), cx.from + 12, ly(0)); x.fillText(accTime(l.r.to), cx.to + 12, ly(0));
