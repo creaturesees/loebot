@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -96,8 +97,36 @@ def current(rows, now):
             "kind": kind_of(row),
             "comment": " ".join((row.get("koment") or "").split())[:200],
         })
+    out = merge(out)
     out.sort(key=lambda r: (r["city"] != "Львів", r["city"].lower(), r["street"].lower(), r["from"] or ""))
     return out
+
+
+def house_key(h):
+    m = re.match(r"(\d+)(.*)", h)
+    return (int(m.group(1)), m.group(2)) if m else (10 ** 9, h)
+
+
+def merge(rows):
+    seen, groups = set(), {}
+    for r in rows:
+        if r["id"] is not None:
+            if r["id"] in seen:
+                continue
+            seen.add(r["id"])
+        key = (r["city"], r["otg"], r["street"], r["kind"], r["from"], r["to"])
+        g = groups.get(key)
+        if g is None:
+            groups[key] = dict(r, houses=list(r["houses"]))
+            continue
+        g["houses"] += [h for h in r["houses"] if h not in g["houses"]]
+        if r["comment"] and r["comment"] not in g["comment"]:
+            g["comment"] = f"{g['comment']}; {r['comment']}" if g["comment"] else r["comment"]
+        g["id"] = min(x for x in (g["id"], r["id"]) if x is not None) if (g["id"] or r["id"]) else None
+    for g in groups.values():
+        g["houses"] = sorted(set(g["houses"]), key=house_key)
+        g["comment"] = g["comment"][:200]
+    return list(groups.values())
 
 
 def load_old():
@@ -108,7 +137,7 @@ def load_old():
         return {}
 
 
-NOTIFY_KINDS = {"emergency", "possible", "gav", "sgav"}
+NOTIFY_KINDS = {"emergency", "possible", "gav", "sgav", "planned"}
 CHANNEL = os.environ.get("SOSCHANNEL_ID", "").strip()
 CHANNEL_CITIES = {c.strip() for c in os.environ.get("ACC_CHANNEL_CITIES", "").split(",") if c.strip()}
 POSTED_FILE = "acc_posted.txt"
@@ -119,7 +148,7 @@ def channel_caption(now, f, empty):
     lines = [f.bold("⚠️ Аварійні відключення"),
              f.italic(f"станом на {now.astimezone(KYIV).strftime('%H:%M %d.%m.%Y')}")]
     if empty:
-        lines += ["", f.esc("Зараз аварійних відключень немає ✅")]
+        lines += ["", f.esc("Зараз аварійних і планових відключень немає ✅")]
     lines += ["", *bot.footer(f)]
     return "\n".join(lines)
 
