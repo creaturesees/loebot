@@ -23,14 +23,21 @@ jobs:
         with:
           python-version: "3.12"
 
-      - run: pip install requests
+      - run: pip install requests pillow
 
       - name: Check emergency outages
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          SOSCHANNEL_ID: ${{ secrets.SOSCHANNEL_ID }}
+          TG_EMOJI_ID: ${{ secrets.TG_EMOJI_ID }}
+          TG_EMOJI_SOS_ID: ${{ secrets.TG_EMOJI_SOS_ID }}
+          ACC_CHANNEL_CITIES: ${{ vars.ACC_CHANNEL_CITIES }}
+          ACC_ONLY_CHANGES: ${{ vars.ACC_ONLY_CHANGES }}
         run: python loe_accidents.py
 
       - name: Save state
         run: |
           git config user.name "loe-bot"
           git config user.email "loe-bot@users.noreply.github.com"
-          if [ -f accidents.json ]; then git add accidents.json; fi
+          for f in accidents.json acc_posted.txt; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --cached --quiet || (git commit -m "update emergency outages" && git pull --rebase && git push)
