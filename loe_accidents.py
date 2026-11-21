@@ -100,6 +100,8 @@ def current(rows, now):
             "comment": " ".join((row.get("koment") or "").split())[:200],
         })
     out = merge(out)
+    for r in out:
+        r.pop("id", None)
     out.sort(key=lambda r: (r["city"] != "Львів", r["city"].lower(), r["street"].lower(), r["from"] or ""))
     return out
 
