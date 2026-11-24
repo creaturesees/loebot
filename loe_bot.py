@@ -10,6 +10,8 @@ import requests
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 CHAT_ID = os.environ.get("CHAT_ID", "")
+MAIN_CHANNEL_ID = os.environ.get("MAIN_CHANNEL_ID", "").strip()
+GPV_TARGET = (os.environ.get("GPV_TARGET", "") or "both").strip().lower()
 HC_URL = os.environ.get("HC_URL", "")
 DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK", "").strip()
 DISCORD_ROLE_ID = os.environ.get("DISCORD_ROLE_ID", "").strip()
@@ -209,13 +211,18 @@ def schedule_footer(f):
             f'{f.logo("🆘", sos_id, "🆘")} {f.link("Аварійні відключення", f"https://t.me/{CHANNEL_SOS}")}']
 
 
+def channel_footer(f):
+    return [f.esc(f"@{CHANNEL_MAIN}"),
+            f'{f.link("💬 Чат", LINK_CHAT)} | {f.link("🆘 Аварійні відключення", f"https://t.me/{CHANNEL_SOS}")}']
+
+
 def footer(f):
     sos_id = TG_EMOJI_SOS_ID if f is TelegramFmt else DISCORD_EMOJI_SOS_ID
     return [f"{f.logo('⚡️', sos_id, '🆘')} {f.channel(CHANNEL_SOS)}",
             f"{f.logo('⚡️')} {f.channel(CHANNEL_MAIN)}"]
 
 
-def format_post(s, f=TelegramFmt, changes=None):
+def format_post(s, f=TelegramFmt, changes=None, channel=False):
     if s["kind"] == "text":
         return f.bold("⚡️ Львівобленерго") + "\n\n" + f.esc(s["text"])
 
@@ -245,7 +252,7 @@ def format_post(s, f=TelegramFmt, changes=None):
         f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
         f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
-        *schedule_footer(f),
+        *(channel_footer(f) if channel else schedule_footer(f)),
     ]
     return "\n".join(lines)
 
@@ -281,11 +288,13 @@ def plain_emoji(text):
     return re.sub(r'<tg-emoji emoji-id="\d+">(.*?)</tg-emoji>', r"\1", text)
 
 
-def send_telegram(text, image=None):
-    ok = _send_telegram(text, image)
+def send_telegram(text, image=None, chat_ids=None):
+    if chat_ids is None:
+        chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
+    ok = _send_telegram(text, image, chat_ids)
     if not ok and "<tg-emoji" in text:
         print("Telegram: повтор без кастомного емодзі")
-        ok = _send_telegram(plain_emoji(text), image)
+        ok = _send_telegram(plain_emoji(text), image, chat_ids)
     return ok
 
 
@@ -294,8 +303,7 @@ def quiet_hours():
     return h < 9 or h >= 23
 
 
-def _send_telegram(text, image=None):
-    chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
+def _send_telegram(text, image, chat_ids):
     silent = {"disable_notification": "true"} if quiet_hours() else {}
     fits = tg_len(text) <= 1024
     file_id = None
@@ -364,10 +372,14 @@ def ping_text(s, changes):
 def send(s, changes=None, old_groups=None):
     image = make_image(s, old_groups)
     ok = 0
-    if BOT_TOKEN and CHAT_ID:
+    to_bot = GPV_TARGET in ("both", "bot")
+    to_channel = GPV_TARGET in ("both", "channel") and MAIN_CHANNEL_ID
+    if BOT_TOKEN and CHAT_ID and to_bot:
         ok += send_telegram(format_post(s, TelegramFmt, changes), image)
+    if BOT_TOKEN and to_channel:
+        ok += send_telegram(plain_emoji(format_post(s, TelegramFmt, changes, channel=True)), image, [MAIN_CHANNEL_ID])
     ok += send_discord(format_post(s, DiscordFmt, changes), image, ping_text(s, changes))
-    if ok == 0:
+    if ok == 0 and GPV_TARGET != "off":
         raise RuntimeError("Не вдалося надіслати нікуди (ні Telegram, ні Discord)")
 
 
