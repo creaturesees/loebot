@@ -141,7 +141,7 @@ def load_old():
         return {}
 
 
-NOTIFY_KINDS = {"emergency", "possible", "gav", "sgav", "planned"}
+NOTIFY_KINDS = {"emergency", "possible", "gav", "sgav"}
 CHANNEL = os.environ.get("SOSCHANNEL_ID", "").strip()
 CHANNEL_CITIES = {c.strip() for c in os.environ.get("ACC_CHANNEL_CITIES", "").split(",") if c.strip()}
 POSTED_FILE = "acc_posted.txt"
@@ -152,7 +152,7 @@ def channel_caption(now, f, empty):
     lines = [f.bold("⚠️ Аварійні відключення"),
              f.italic(f"станом на {now.astimezone(KYIV).strftime('%H:%M %d.%m.%Y')}")]
     if empty:
-        lines += ["", f.esc("Зараз аварійних і планових відключень немає ✅")]
+        lines += ["", f.esc("Зараз аварійних відключень немає ✅")]
     lines += ["", *bot.footer(f)]
     return "\n".join(lines)
 
