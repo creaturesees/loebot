@@ -235,21 +235,34 @@ def format_post(s, f=TelegramFmt, changes=None, channel=False):
     if s["updated"]:
         lines += [f.italic(f"Інформація станом на {s['updated']}"), ""]
 
+    now = now_kyiv()
+    date_key = (d.year, d.month, d.day)
+    today_key = (now.year, now.month, now.day)
+    now_min = now.hour * 60 + now.minute if date_key == today_key else (10 ** 6 if date_key < today_key else -1)
+
+    def ended(end):
+        h, m = map(int, end.split(":"))
+        return h * 60 + m <= now_min
+
     blocks = []
     for group in sorted(s["groups"], key=lambda g: tuple(map(int, g.split(".")))):
         block = [f"Група {group}"]
         intervals = s["groups"][group]
-        if intervals:
-            for start, end in intervals:
+        left = [(a, b) for a, b in intervals if not ended(b)]
+        if left:
+            for start, end in left:
                 block.append(f"{start} — {end} ({duration(start, end)})")
+        elif intervals:
+            block.append("☑️ Усі відключення закінчились")
         else:
-            block.append("Відключень немає ✅")
+            block.append("✅ Відключень немає")
         blocks.append("\n".join(f.code(line) for line in block))
     lines.append("\n\n".join(blocks))
     lines.append("")
 
     lines += [
         f.esc("Надсилай рідним та друзям, щоб вони могли спланувати свій час."),
+        "",
         f.link("❗️ Як дізнатися свою групу відключень?", LINK_GROUP),
         "",
         *(channel_footer(f) if channel else schedule_footer(f)),
