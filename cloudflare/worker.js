@@ -80,7 +80,7 @@ async function panel(env) {
   const cur = (await getVar(env, "GPV_TARGET")) || "both";
   const channel = await getVar(env, "MAIN_CHANNEL_ID");
   const text = `<b>Куди надсилати графік ГПВ</b>\n\nЗараз: <b>${TARGETS[cur] || cur}</b>` +
-    (channel ? `\nКанал: ${channel}` : "\n⚠️ Канал не задано (змінна MAIN_CHANNEL_ID)");
+    (channel ? `\nКанал: ${channel}` : "");
   const keyboard = Object.entries(TARGETS).map(([id, label]) => [{ text: (id === cur ? "✅ " : "") + label, callback_data: `gpv:${id}` }]);
   return { text, parse_mode: "HTML", reply_markup: { inline_keyboard: keyboard } };
 }
