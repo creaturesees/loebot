@@ -39,17 +39,28 @@ html { background: var(--bg); }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 "Fira Sans", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 button { font: inherit; color: inherit; }
 
-.top { background: var(--green); color: #fff; position: sticky; top: 0; z-index: 30; }
-.top .in { max-width: 1240px; margin: 0 auto; padding: 0 32px; height: 60px; display: flex; align-items: center; gap: 36px; }
-.brand { display: flex; align-items: center; gap: 12px; color: #fff; text-decoration: none; flex: none; }
-.brand img { height: 30px; width: auto; display: block; }
-.brand span { font: 700 23px/1 "Carlito", sans-serif; }
-.brand em { font-style: normal; color: var(--orange); }
-.tabs { display: flex; gap: 4px; height: 100%; }
-.tabs a { display: flex; align-items: center; padding: 0 14px; color: #e4ede0; text-decoration: none; font-weight: 500; font-size: 15px; box-shadow: inset 0 -3px 0 transparent; white-space: nowrap; }
-.tabs a:hover { color: #fff; }
-.tabs a[aria-current="page"] { color: #fff; box-shadow: inset 0 -3px 0 var(--orange); }
+.side { position: fixed; inset: 0 auto 0 0; width: 232px; background: #1f2b1b; color: #c9d4c4; display: flex; flex-direction: column; z-index: 40; transition: transform .2s ease; }
+.brand { display: flex; align-items: center; height: 64px; padding: 0 22px; background: var(--green); flex: none; }
+.brand img { height: 34px; width: auto; display: block; }
+.side-label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #7f8f78; padding: 24px 22px 8px; }
+.tabs { display: flex; flex-direction: column; }
+.tabs a { display: flex; align-items: center; gap: 12px; padding: 11px 22px; color: #c9d4c4; text-decoration: none; font-weight: 500; font-size: 15px; box-shadow: inset 3px 0 0 transparent; }
+.tabs a svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; opacity: .8; }
+.tabs a:hover { color: #fff; background: rgba(255,255,255,.04); }
+.tabs a[aria-current="page"] { color: #fff; background: rgba(255,255,255,.07); box-shadow: inset 3px 0 0 var(--orange); }
+.tabs a[aria-current="page"] svg { opacity: 1; color: var(--orange); }
+.side-foot { margin-top: auto; padding: 16px 22px 20px; background: rgba(0,0,0,.18); font-size: 14px; }
+.side-foot small { display: block; color: #7f8f78; font-size: 12px; }
+.side-foot a { color: #fff; text-decoration: none; }
+.scrim { display: none; }
+.shell { margin-left: 232px; min-height: 100vh; transition: margin-left .2s ease; }
+.top { position: sticky; top: 0; z-index: 30; height: 64px; background: var(--green); color: #fff; display: flex; align-items: center; gap: 16px; padding: 0 32px 0 20px; }
+.burger { width: 40px; height: 40px; border: 0; background: none; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 0; }
+.burger span { width: 18px; height: 2px; background: #fff; display: block; }
+.burger:hover { background: rgba(255,255,255,.1); }
 .top .meta { margin-left: auto; color: #dbe7d4; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+body.side-off .side { transform: translateX(-100%); }
+body.side-off .shell { margin-left: 0; }
 
 main { max-width: 1240px; margin: 0 auto; padding: 0 32px 40px; }
 section { padding: 28px 0 0; }
@@ -183,18 +194,18 @@ table.acc .kd i { width: 12px; height: 12px; display: inline-block; }
 footer { max-width: 1240px; margin: 0 auto; padding: 24px 32px 32px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 15px; }
 footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
 
+@media (max-width: 900px) {
+  .side { transform: translateX(-100%); box-shadow: none; }
+  .shell { margin-left: 0; }
+  body.side-open .side { transform: none; box-shadow: 0 0 40px rgba(0,0,0,.35); }
+  body.side-open .scrim { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 35; }
+}
 @media (max-width: 1000px) {
   .days { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
-  .top .in { padding: 0 16px; height: auto; flex-wrap: wrap; gap: 0 12px; }
-  .brand { height: 52px; }
-  .brand img { height: 26px; }
-  .brand span { font-size: 20px; }
-  .top .meta { display: none; }
-  .tabs { order: 3; width: calc(100% + 32px); margin: 0 -16px; padding: 0 6px; height: 44px; overflow-x: auto; scrollbar-width: none; border-top: 1px solid rgba(255,255,255,.15); }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tabs a { padding: 0 10px; font-size: 15px; }
+  .top { height: 56px; padding: 0 16px 0 8px; }
+  .top .meta { font-size: 12px; }
   main { padding: 0 16px 32px; }
   footer { padding: 20px 16px 28px; }
   section { padding-top: 20px; }
@@ -235,17 +246,23 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
 </style>
 </head>
 <body>
+<aside class="side" id="side">
+  <a class="brand" href="#grafik" aria-label="Графік"><img src="assets/logo-mark.png" alt=""></a>
+  <div class="side-label">Розділи</div>
+  <nav class="tabs" id="tabs" aria-label="Розділи">
+    <a href="#grafik" data-tab="grafik"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 9h18M8 4v16"/></svg>Графік</a>
+    <a href="#kalendar" data-tab="kalendar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Календар</a>
+    <a href="#pidsumok" data-tab="pidsumok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Підсумок</a>
+    <a href="#avariini" data-tab="avariini"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg>Аварійні</a>
+  </nav>
+  <div class="side-foot"><small>Канал</small><a href="https://t.me/lvivpoweroutage">t.me/lvivpoweroutage</a></div>
+</aside>
+<div class="scrim" id="scrim"></div>
+
+<div class="shell">
 <header class="top">
-  <div class="in">
-    <a class="brand" href="#grafik"><img src="assets/logo-mark.png" alt=""><span>Відключення<em> · Львів</em></span></a>
-    <nav class="tabs" id="tabs" aria-label="Розділи">
-      <a href="#grafik" data-tab="grafik">Графік</a>
-      <a href="#kalendar" data-tab="kalendar">Календар</a>
-      <a href="#pidsumok" data-tab="pidsumok">Підсумок</a>
-      <a href="#avariini" data-tab="avariini">Аварійні</a>
-    </nav>
-    <div class="meta" id="meta"></div>
-  </div>
+  <button class="burger" id="burger" aria-label="Меню" aria-controls="side" aria-expanded="true"><span></span><span></span><span></span></button>
+  <div class="meta" id="meta"></div>
 </header>
 
 <main>
@@ -321,6 +338,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   <span>Дані: графіки й аварійні відключення Львівобленерго, зібрані ботом</span>
   <a href="https://t.me/lvivpoweroutage">t.me/lvivpoweroutage</a>
 </footer>
+</div>
 
 <script>
 const GROUPS = ["1.1","1.2","2.1","2.2","3.1","3.2","4.1","4.2","5.1","5.2","6.1","6.2"];
@@ -1045,6 +1063,20 @@ function showTab() {
   closePicker();
   window.scrollTo(0, 0);
 }
+const narrow = matchMedia("(max-width: 900px)");
+const burger = document.getElementById("burger");
+function sideOpen() { return narrow.matches ? document.body.classList.contains("side-open") : !document.body.classList.contains("side-off"); }
+function syncBurger() { burger.setAttribute("aria-expanded", String(sideOpen())); }
+burger.onclick = () => {
+  if (narrow.matches) document.body.classList.toggle("side-open");
+  else { document.body.classList.toggle("side-off"); store.set("loe-side", document.body.classList.contains("side-off") ? "off" : "on"); }
+  syncBurger();
+};
+document.getElementById("scrim").onclick = () => { document.body.classList.remove("side-open"); syncBurger(); };
+document.querySelectorAll("#tabs a, .brand").forEach(a => a.addEventListener("click", () => { document.body.classList.remove("side-open"); syncBurger(); }));
+narrow.addEventListener("change", syncBurger);
+if (store.get("loe-side", "on") === "off") document.body.classList.add("side-off");
+syncBurger();
 window.addEventListener("hashchange", showTab);
 showTab();
 document.getElementById("accPng").onclick = () => exportAcc().catch(e => { document.getElementById("accPng").disabled = false; alert("Не вдалося створити PNG: " + e.message); });
