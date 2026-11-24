@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="darkreader-lock">
+<script>try { const t = localStorage.getItem("loe-theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <title>Графік відключень – Львів</title>
 <link rel="icon" href="assets/favicon.ico?v=2" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png?v=2">
@@ -33,6 +36,44 @@
   --h2: #d9a089;
   --h3: #bf6455;
   --h4: #9e3430;
+  --surface: #ffffff;
+  --sel-bg: #1f2420;
+  --sel-fg: #ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --green: #4d7640;
+    --green-dark: #3a5a2e;
+    --ink: #e3e8df;
+    --muted: #97a191;
+    --rule: #2f3a2c;
+    --head-bg: #1e271c;
+    --bg: #121811;
+    --surface: #1a2218;
+    --on: #2b3a26;
+    --off: #c0473f;
+    --cancelled: #6aa852;
+    --sel-bg: #e3e8df;
+    --sel-fg: #121811;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --green: #4d7640;
+  --green-dark: #3a5a2e;
+  --ink: #e3e8df;
+  --muted: #97a191;
+  --rule: #2f3a2c;
+  --head-bg: #1e271c;
+  --bg: #121811;
+  --surface: #1a2218;
+  --on: #2b3a26;
+  --off: #c0473f;
+  --cancelled: #6aa852;
+  --sel-bg: #e3e8df;
+  --sel-fg: #121811;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html { background: var(--bg); }
@@ -58,6 +99,9 @@ button { font: inherit; color: inherit; }
 .burger { width: 40px; height: 40px; border: 0; background: none; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; padding: 0; }
 .burger span { width: 18px; height: 2px; background: #fff; display: block; }
 .burger:hover { background: rgba(255,255,255,.1); }
+.theme { border: 0; background: none; color: #fff; cursor: pointer; width: 40px; height: 40px; padding: 0; flex: none; display: flex; align-items: center; justify-content: center; }
+.theme svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.theme:hover { background: rgba(255,255,255,.1); }
 .top .meta { margin-left: auto; color: #dbe7d4; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 body.side-off .side { transform: translateX(-100%); }
 body.side-off .shell { margin-left: 0; }
@@ -88,7 +132,7 @@ section[hidden] { display: none; }
 .grid .s { height: 40px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 18px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
 .grid .s.t { justify-content: flex-start; padding-left: 12px; font-weight: 400; font-size: 14px; color: var(--muted); }
 .grid .t.r { height: 34px; display: flex; align-items: center; padding-left: 12px; font-size: 16px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
-.grid .c { height: 34px; border: 1px solid #fff; background: var(--on); }
+.grid .c { height: 34px; border: 1px solid var(--bg); background: var(--on); }
 .grid .h, .grid .s { font-size: 15px; }
 .grid .c.off { background: var(--off); }
 .grid .c.cancelled { background: var(--cancelled); }
@@ -105,7 +149,7 @@ section[hidden] { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
 .chip { background: none; border: 1px solid transparent; padding: 5px 11px; cursor: pointer; font-weight: 500; font-size: 15px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .chip:hover { color: var(--ink); background: var(--head-bg); }
-.chip[aria-pressed="true"] { background: var(--ink); color: #fff; }
+.chip[aria-pressed="true"] { background: var(--sel-bg); color: var(--sel-fg); }
 
 .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .dow { font-size: 14px; color: var(--muted); padding: 0 8px 4px; }
@@ -114,6 +158,7 @@ section[hidden] { display: none; }
 .day b { font-weight: 600; font-size: 17px; }
 .day span { font-size: 15px; font-variant-numeric: tabular-nums; }
 .day.nodata span { color: var(--muted); }
+.day:not(.nodata) { color: #1f2420; }
 .day.dark { color: #fff; }
 .day.sel { outline: 3px solid var(--orange); outline-offset: -3px; }
 .day.today b { text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 3px; text-underline-offset: 3px; }
@@ -130,8 +175,8 @@ table.sum tr.mine td { background: var(--head-bg); font-weight: 600; }
 .ver b { display: block; font-weight: 600; font-size: 16px; font-variant-numeric: tabular-nums; }
 .ver small { color: var(--muted); font-size: 13px; }
 .ver:hover { background: var(--head-bg); }
-.ver[aria-pressed="true"] { background: var(--ink); color: #fff; }
-.ver[aria-pressed="true"] small { color: #dee9d6; }
+.ver[aria-pressed="true"] { background: var(--sel-bg); color: var(--sel-fg); }
+.ver[aria-pressed="true"] small { color: inherit; opacity: .75; }
 .changes { margin-top: 22px; }
 .changes { margin-top: 28px; }
 .changes h3 { font: 700 20px/1.2 "Carlito", sans-serif; margin: 0 0 6px; }
@@ -140,7 +185,7 @@ table.sum tr.mine td { background: var(--head-bg); font-weight: 600; }
 .changes li i { width: 14px; height: 14px; display: inline-block; align-self: center; }
 .changes li .d { color: var(--muted); white-space: nowrap; }
 .day .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
-.day .badge { font-size: 12px; font-weight: 600; padding: 1px 6px; background: rgba(255,255,255,.85); color: var(--ink); white-space: nowrap; }
+.day .badge { font-size: 12px; font-weight: 600; padding: 1px 6px; background: rgba(255,255,255,.85); color: #1f2420; white-space: nowrap; }
 .period { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
 .period .presets { display: flex; flex-wrap: wrap; gap: 6px; }
 .period label { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 15px; }
@@ -149,13 +194,13 @@ table.sum tr.mine td { background: var(--head-bg); font-weight: 600; }
 .period input.bad { border-color: var(--off); outline-color: var(--off); }
 .period .sep { flex: 1; }
 .range { position: relative; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.picker { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; background: #fff; border: 1px solid var(--rule); box-shadow: 0 8px 24px rgba(31,36,32,.12); padding: 14px; width: 320px; }
+.picker { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; background: var(--surface); border: 1px solid var(--rule); box-shadow: 0 8px 24px rgba(31,36,32,.12); padding: 14px; width: 320px; }
 .picker .ph { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .picker .ph b { font: 700 20px/1 "Carlito", sans-serif; }
-.picker .ph button { background: #fff; border: 1px solid var(--rule); width: 32px; height: 32px; cursor: pointer; }
+.picker .ph button { background: var(--surface); color: var(--ink); border: 1px solid var(--rule); width: 32px; height: 32px; cursor: pointer; }
 .picker .pg { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .picker .pd { font-size: 12px; color: var(--muted); text-align: center; padding: 2px 0 4px; }
-.picker .pc { height: 36px; border: 0; background: #fff; cursor: pointer; font-variant-numeric: tabular-nums; position: relative; font-size: 15px; }
+.picker .pc { height: 36px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums; position: relative; font-size: 15px; }
 .picker .pc:hover { outline: 1px solid var(--green); outline-offset: -1px; }
 .picker .pc.in { background: var(--head-bg); }
 .picker .pc.edge { background: var(--green-dark); color: #fff; font-weight: 600; }
@@ -253,6 +298,7 @@ footer a { color: var(--green-dark); font-weight: 600; text-decoration: none; }
   <button class="burger" id="burger" aria-label="Меню" aria-controls="side" aria-expanded="true"><span></span><span></span><span></span></button>
   <a class="brand" href="#grafik" aria-label="Графік"><img src="assets/logo-mark.png" alt=""></a>
   <div class="meta" id="meta"></div>
+  <button class="theme" id="themeBtn" type="button"></button>
 </header>
 
 <aside class="side" id="side">
@@ -847,7 +893,7 @@ function renderPicker() {
   for (let d = 1; d <= n; d++) {
     const k = keyOf(new Date(y, m, d)), info = days[k];
     const cls = ["pc"]; if (k >= a && k <= b) cls.push(k === a || k === b ? "edge" : "in"); if (k === today) cls.push("today");
-    const dot = info ? `<i style="background:${heatHex(info.minutes[group])}"></i>` : "";
+    const dot = info ? `<i style="background:${heat(info.minutes[group])[0]}"></i>` : "";
     h += `<button class="${cls.join(" ")}" data-k="${k}">${d}${dot}</button>`;
   }
   h += `</div><div class="hint">${pickStage === 0 ? "Натисни перший день періоду" : "Тепер останній день (або той самий, щоб вибрати один день)"}</div>`;
@@ -1081,6 +1127,20 @@ document.querySelectorAll("#tabs a, .brand").forEach(a => a.addEventListener("cl
 narrow.addEventListener("change", syncBurger);
 if (store.get("loe-side", "on") === "off") document.body.classList.add("side-off");
 syncBurger();
+const THEMES = [
+  ["auto", '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>', "Тема: як у системі"],
+  ["dark", '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>', "Тема: темна"],
+  ["light", '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', "Тема: світла"],
+];
+const themeBtn = document.getElementById("themeBtn");
+let theme = store.get("loe-theme", "auto");
+function applyTheme() {
+  const t = THEMES.find(x => x[0] === theme) || THEMES[0];
+  if (theme === "auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme;
+  themeBtn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${t[1]}</svg>`; themeBtn.title = t[2]; themeBtn.setAttribute("aria-label", t[2]);
+}
+themeBtn.onclick = () => { theme = THEMES[(THEMES.findIndex(x => x[0] === theme) + 1) % THEMES.length][0]; store.set("loe-theme", theme); applyTheme(); };
+applyTheme();
 window.addEventListener("hashchange", showTab);
 showTab();
 document.getElementById("accPng").onclick = () => exportAcc().catch(e => { document.getElementById("accPng").disabled = false; alert("Не вдалося створити PNG: " + e.message); });
