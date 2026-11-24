@@ -10,7 +10,9 @@ async function getJson(url) {
     cf: { cacheTtl: 0 },
   });
   if (!r.ok) throw new Error(`${url} → HTTP ${r.status}`);
-  return r.json();
+  const res = await r.json();
+  if (!res.ok) console.log(`Telegram ${method}: ${res.description}`);
+  return res;
 }
 
 function pick(item) {
@@ -88,7 +90,7 @@ async function onTelegram(update, env) {
   const cb = update.callback_query;
   const from = (msg || cb || {}).from || {};
   const owners = String(env.OWNER_ID || "").split(",").map(x => x.trim()).filter(Boolean);
-  if (!owners.includes(String(from.id))) return;
+  if (!owners.includes(String(from.id))) { console.log(`Ігнорую ${from.id}: немає в OWNER_ID`); return; }
   if (msg && /^\/(start|gpv|settings)\b/.test(msg.text || "")) {
     await tg(env, "sendMessage", { chat_id: msg.chat.id, ...(await panel(env)) });
   } else if (cb && /^gpv:(both|channel|bot|off)$/.test(cb.data || "")) {
