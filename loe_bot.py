@@ -229,7 +229,7 @@ def format_post(s, f=TelegramFmt, changes=None, channel=False):
     d = datetime.strptime(s["date"], "%d.%m.%Y")
     lines = [
         f.bold("⏱️ Графік погодинних відключень"),
-        f.bold(f"{WEEKDAYS[d.weekday()]}, {d.day} {MONTHS[d.month - 1]} {d.year}"),
+        f.bold(f"{WEEKDAYS[d.weekday()].upper()}, {d.day} {MONTHS[d.month - 1]} {d.year}"),
         "",
     ]
     if s["updated"]:
