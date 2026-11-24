@@ -301,13 +301,13 @@ def plain_emoji(text):
     return re.sub(r'<tg-emoji emoji-id="\d+">(.*?)</tg-emoji>', r"\1", text)
 
 
-def send_telegram(text, image=None, chat_ids=None):
+def send_telegram(text, image=None, chat_ids=None, quiet=True):
     if chat_ids is None:
         chat_ids = [c.strip() for c in CHAT_ID.split(",") if c.strip()]
-    ok = _send_telegram(text, image, chat_ids)
+    ok = _send_telegram(text, image, chat_ids, quiet)
     if not ok and "<tg-emoji" in text:
         print("Telegram: повтор без кастомного емодзі")
-        ok = _send_telegram(plain_emoji(text), image, chat_ids)
+        ok = _send_telegram(plain_emoji(text), image, chat_ids, quiet)
     return ok
 
 
@@ -316,8 +316,8 @@ def quiet_hours():
     return h < 9 or h >= 23
 
 
-def _send_telegram(text, image, chat_ids):
-    silent = {"disable_notification": "true"} if quiet_hours() else {}
+def _send_telegram(text, image, chat_ids, quiet=True):
+    silent = {"disable_notification": "true"} if quiet and quiet_hours() else {}
     fits = tg_len(text) <= 1024
     file_id = None
     ok = 0
@@ -390,7 +390,7 @@ def send(s, changes=None, old_groups=None):
     if BOT_TOKEN and CHAT_ID and to_bot:
         ok += send_telegram(format_post(s, TelegramFmt, changes), image)
     if BOT_TOKEN and to_channel:
-        ok += send_telegram(plain_emoji(format_post(s, TelegramFmt, changes, channel=True)), image, [MAIN_CHANNEL_ID])
+        ok += send_telegram(plain_emoji(format_post(s, TelegramFmt, changes, channel=True)), image, [MAIN_CHANNEL_ID], quiet=False)
     ok += send_discord(format_post(s, DiscordFmt, changes), image, ping_text(s, changes))
     if ok == 0 and GPV_TARGET != "off":
         raise RuntimeError("Не вдалося надіслати нікуди (ні Telegram, ні Discord)")

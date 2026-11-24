@@ -159,7 +159,7 @@ def channel_caption(now, f, empty):
 
 def send_album(images, caption):
     import loe_bot as bot
-    silent = {"disable_notification": "true"} if bot.quiet_hours() else {}
+    silent = {}
     for start in range(0, len(images), 10):
         chunk = images[start:start + 10]
         cap = caption if start == 0 else ""
