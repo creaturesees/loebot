@@ -87,7 +87,8 @@ async function onTelegram(update, env) {
   const msg = update.message;
   const cb = update.callback_query;
   const from = (msg || cb || {}).from || {};
-  if (String(from.id) !== String(env.OWNER_ID)) return;
+  const owners = String(env.OWNER_ID || "").split(",").map(x => x.trim()).filter(Boolean);
+  if (!owners.includes(String(from.id))) return;
   if (msg && /^\/(start|gpv|settings)\b/.test(msg.text || "")) {
     await tg(env, "sendMessage", { chat_id: msg.chat.id, ...(await panel(env)) });
   } else if (cb && /^gpv:(both|channel|bot|off)$/.test(cb.data || "")) {
