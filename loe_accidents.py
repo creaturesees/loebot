@@ -159,23 +159,22 @@ def channel_caption(now, f, empty):
 
 def send_album(images, caption):
     import loe_bot as bot
-    silent = {}
-    for start in range(0, len(images), 10):
-        chunk = images[start:start + 10]
-        cap = caption if start == 0 else ""
-        if len(chunk) == 1:
-            data = {"chat_id": CHANNEL, **silent}
-            if cap:
-                data.update(caption=cap, parse_mode="HTML")
-            r = bot.tg_call("sendPhoto", data, {"photo": ("avariini.png", chunk[0], "image/png")})
-        else:
-            media = [{"type": "photo", "media": f"attach://p{i}"} for i in range(len(chunk))]
-            if cap:
-                media[0].update(caption=cap, parse_mode="HTML")
-            files = {f"p{i}": (f"avariini_{start + i + 1}.png", b, "image/png") for i, b in enumerate(chunk)}
-            r = bot.tg_call("sendMediaGroup", {"chat_id": CHANNEL, "media": json.dumps(media), **silent}, files)
+
+    def check(r):
         if not r.ok:
             raise RuntimeError(f"{r.status_code} {r.text[:200]}")
+
+    if len(images) == 1:
+        check(bot.tg_call("sendPhoto", {"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML"},
+                          {"photo": ("avariini.png", images[0], "image/png")}))
+        return
+    check(bot.tg_call("sendMessage", {"chat_id": CHANNEL, "text": caption, "parse_mode": "HTML",
+                                      "disable_web_page_preview": "true"}))
+    for i, b in enumerate(images):
+        check(bot.tg_call("sendPhoto", {"chat_id": CHANNEL, "caption": f"{i + 1} з {len(images)}",
+                                        "disable_notification": "true"},
+                          {"photo": (f"avariini_{i + 1}.png", b, "image/png")}))
+        time.sleep(1)
 
 
 def post_channel(rows, now):
@@ -195,11 +194,7 @@ def post_channel(rows, now):
         return
     if rows:
         images = render_accidents(rows, datetime.now(KYIV).strftime("%Y-%m-%d"))
-        caption = channel_caption(now, bot.TelegramFmt, False)
-        try:
-            send_album(images, caption)
-        except RuntimeError:
-            send_album(images, bot.plain_emoji(caption))
+        send_album(images, bot.plain_emoji(channel_caption(now, bot.TelegramFmt, False)))
     else:
         text = channel_caption(now, bot.TelegramFmt, True)
         data = {"chat_id": CHANNEL, "text": text, "parse_mode": "HTML", "disable_web_page_preview": "true"}
