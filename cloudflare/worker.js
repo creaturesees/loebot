@@ -10,9 +10,7 @@ async function getJson(url) {
     cf: { cacheTtl: 0 },
   });
   if (!r.ok) throw new Error(`${url} → HTTP ${r.status}`);
-  const res = await r.json();
-  if (!res.ok) console.log(`Telegram ${method}: ${res.description}`);
-  return res;
+  return r.json();
 }
 
 function pick(item) {
@@ -73,7 +71,9 @@ async function tg(env, method, body) {
   const r = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/${method}`, {
     method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
   });
-  return r.json();
+  const res = await r.json();
+  if (!res.ok) console.log(`Telegram ${method}: ${res.description}`);
+  return res;
 }
 
 async function panel(env) {
